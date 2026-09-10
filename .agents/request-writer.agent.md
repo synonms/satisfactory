@@ -54,7 +54,7 @@ I transform high level, often vague requests into structured work items aligned 
       - **Source**: The Azure DevOps work item URL, only included when the request originated from an Azure DevOps ticket
     - If the work item is a User Story or Chore, also include:
       - **Description**: As a {PERSONA}, I want to {REQUIREMENT}, so that {BENEFIT}.
-      - **Acceptance Criteria**: List of functional requirements, written from the user's perspective, that are independently verifiable through testing.  Assign each acceptance criterion a unique sub-id in format `{work-item-id}.{incrementing-suffix}` e.g. '00001.1.1', '00001.1.2', etc.
+      - **Acceptance Criteria**: List of functional requirements, written from the user's perspective, that are independently verifiable through testing.  Assign each acceptance criterion a unique sub-id in format `{work-item-id}.{incrementing-suffix}` e.g. '00001-1.1', '00001-1.2', etc.
     - If the work item is a Bug, also include:
       - **Description**: Summary of the defect or issue
       - **Steps to Reproduce**: List of steps to reproduce the bug
@@ -79,3 +79,4 @@ I am the entry point to the AI Software Factory pipeline. I receive incoming req
 7. Adjust the breakdown as needed based on feedback
 8. Once approved by the user, write the work item tickets and save them to `board/new`, including the Azure DevOps URL as the **Source** field when applicable
 9. Provide a summary of the created tickets, including their file paths and the work items they contain
+10. Tell the user that each work item is now ready to enter the `sdlc` workflow, and that the next step is to run the `.agents/prompts/next.prompt.md` dispatcher against a chosen work item id in a new session. I do not create `handoffs/` state; that is the pipeline driver's responsibility. See `.agents/workflows/sdlc.md`.

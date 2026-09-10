@@ -1,0 +1,4 @@
+{
+  "chat.agentFilesLocations": { ".agents": true },
+  "chat.promptFilesLocations": { ".agents/prompts": true }
+}
