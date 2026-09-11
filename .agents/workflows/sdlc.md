@@ -85,15 +85,16 @@ Iteration numbers are scoped to the chunk, not to the work item. Two chunks may 
 
 ### Ownership rules
 
-- Only the driver mutates `state`, `chunks[].state`, attempt counters, `budget`, and `escalations`.
-- Agents write their artifact, append one entry to `history`, and report an outcome. They propose; they do not route.
+- Only the driver mutates `state.json`. That includes `state`, `chunks[].state`, attempt counters, `budget`, `escalations`, and `history`.
+- Agents write their numbered artifact and report an outcome. They propose; they do not route, and they do not touch `state.json`.
+- The driver applies the previous run's transition at the start of the next dispatch, by comparing `state.json` against the artifacts on disk. A missing expected artifact is a failed run under the monotonic artifact rule.
 - `state.json` must be **self-sufficient**. A fresh agent needs only its work item, its specification chunk, and the artifact paths named in state. It must never depend on conversation history.
 
 ### Work item states
 
 | State | Next agent |
 | --- | --- |
-| `specification-draft` | `software-architect` (awaiting human approval) |
+| `specification-draft` | none - human approval gate; the driver records the outcome |
 | `specification-approved` | `software-engineer` |
 | `chunk-implementation` | `software-engineer` for `activeChunk` |
 | `chunk-testing` | `quality-assurance-engineer` for `activeChunk` |
@@ -102,7 +103,8 @@ Iteration numbers are scoped to the chunk, not to the work item. Two chunks may 
 | `bug-repro-test` | `quality-assurance-engineer` (flow 2 entry) |
 | `bug-fix` | `software-engineer` |
 | `documentation` | `documentation-writer` |
-| `ready-for-user` | terminal - awaiting human verification |
+| `ready-for-user` | none - final human review gate; the driver records the decision |
+| `done` | terminal - delivered and approved |
 | `blocked` | terminal - awaiting human intervention |
 
 ### Chunk states
@@ -129,12 +131,13 @@ stateDiagram-v2
     validation --> ready_for_user : Passed
     validation --> blocked : Blocked OR attempts >= max
     blocked --> [*]
-    ready_for_user --> [*]
+    ready_for_user --> done : human approval
+    ready_for_user --> chunk_implementation : unmet existing requirement
 ```
 
 ### Transition rules
 
-1. `specification-draft` -> `specification-approved` requires a human. The driver never self-approves. `specificationStatus` in `state.json` must match the status inside `specification.md`.
+1. `specification-draft` -> `specification-approved` requires a human. The driver never self-approves. `specificationStatus` in `state.json` must match the status inside `specification.md`. On this same transition, the driver bootstraps `chunks`: it must contain one entry per chunk in `specification.md`'s Chunk Breakdown, all starting at `not-started`, before any chunk is dispatched. `chunks` must never be populated lazily, one entry per completed run - the driver cannot compute dependency order or detect "no chunks remain" otherwise.
 2. Chunks are processed **sequentially**, in dependency order derived from `dependsOn`. Set `activeChunk` to the first chunk whose dependencies are all `tests-passing`. Parallel execution against a shared working tree is not supported.
 3. `chunk-implementation` -> `chunk-testing` on a new `changelog.{n}.md`. Increment `implementAttempts`.
 4. `chunk-testing` outcome `passed` sets the chunk to `tests-passing`; the driver then selects the next pending chunk or, when none remain, moves to `integration-testing`.
@@ -142,6 +145,9 @@ stateDiagram-v2
 6. Integration failures return to `chunk-implementation` for the chunk identified as the remediation owner in the integration testlog.
 7. Validation `Failed` routes to `chunk-implementation` when the defect is in the implementation, or back to `specification-draft` when the validator identifies a specification defect. The specification-defect edge is mandatory: a wrong requirement cannot be fixed by an engineer, and looping on it burns the entire budget for nothing.
 8. Returning to `specification-draft` resets `specificationStatus` to `Draft` and requires fresh human approval.
+9. Validation `Passed` always sets the top-level state to `ready-for-user`. The driver must not set `blocked` unless a failsafe trips or the validation artifact outcome is `Blocked`; in either case it must append an escalation.
+10. At `ready-for-user`, final approval requires an explicit human instruction. The driver records the approval in `history`, sets `state` to `done`, and moves the work item from `board/in-progress/` to `board/done/`.
+11. A human may request remediation at `ready-for-user` only for an unmet requirement already present in the work item or approved specification. The feedback must identify that requirement and, for flow 1, the owning chunk. The driver verifies the cited requirement exists before routing: flow 1 moves to `chunk-implementation` for the owning chunk; flow 2 moves to `bug-fix`; flow 3 moves to `documentation`. Record the feedback and cited requirement in `history`. A request for functionality outside those artifacts is out of scope: record it in `history`, retain `ready-for-user`, and do not dispatch an agent.
 
 ## Flow 2: bug
 
@@ -159,6 +165,8 @@ stateDiagram-v2
     validation --> bug_fix : Failed
     validation --> ready_for_user : Passed
     validation --> blocked : Blocked OR attempts >= max
+    ready_for_user --> done : human approval
+    ready_for_user --> bug_fix : unmet existing requirement
 ```
 
 The driver creates a single synthetic chunk in `state.json` whose `technology` matches the affected stack, so chunk-scoped artifact paths and counters behave identically to flow 1.
@@ -174,6 +182,8 @@ stateDiagram-v2
     validation --> documentation : Failed AND attempts < max
     validation --> ready_for_user : Passed
     validation --> blocked : Blocked OR attempts >= max
+    ready_for_user --> done : human approval
+    ready_for_user --> documentation : unmet existing requirement
 ```
 
 No specification, no automated tests, no chunks. The validator checks the documentation change against the `request-writer` work item.
@@ -236,7 +246,7 @@ There is one `software-engineer` agent and one `quality-assurance-engineer` agen
 
 Use the `.agents/prompts/next.prompt.md` dispatcher. Given a work item id, it reads `state.json`, reports the next agent and the exact opening instruction, and states the transition to apply afterwards. Run each step in a new chat session to guarantee a fresh context window.
 
-Human gates remain at `specification-draft -> specification-approved` and at `ready-for-user`.
+Human gates remain at `specification-draft -> specification-approved` and at `ready-for-user -> done`. Final-review remediation is limited to unmet requirements already recorded in the work item or approved specification; scope additions become separate work items.
 
 ### Stage 2: automated (planned)
 

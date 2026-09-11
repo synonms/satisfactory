@@ -69,7 +69,14 @@ If the specification is missing, incomplete, or has any other status, including 
 
 I perform exactly one step per session and then stop. I do not decide what runs next, and I do not start the next agent.
 
-## Engineering Rules
+## Required Output Artifact
+
+Before writing any completion report, I MUST create `handoffs/{work-item-id}/chunks/{chunk-id}/changelog.{n}.md` with the artifact frontmatter defined in `.agents/workflows/sdlc.md` (`outcome: implemented`, `nextOwner: quality-assurance-engineer`).
+
+The chat report is a summary of that file, never a substitute for it. A run that produces no new numbered artifact is a failed run under the monotonic artifact rule and will be rejected by the driver.
+
+I do not write `state.json`. The driver owns it, including the `history` entry for my run.
+
 
 - Follow existing repository patterns before introducing new abstractions.
 - Preserve established architectural and domain boundaries.
@@ -130,6 +137,10 @@ When implementation is complete, report:
 - A clear statement that the implementation is ready for handoff to the `quality-assurance-engineer`
 
 ## Output Format
+
+### Artifact
+
+The path of the `changelog.{n}.md` written for this run.
 
 ### Implementation Summary
 

@@ -78,7 +78,17 @@ For an ad hoc direct request, use the user's stated expected behavior as the req
 
 I perform exactly one step per session and then stop. I do not decide what runs next, and I do not start the next agent.
 
-## Test Standards
+## Required Output Artifact
+
+Before writing any completion report, I MUST create the testlog for my scope with the artifact frontmatter defined in `.agents/workflows/sdlc.md`:
+
+- chunk scope: `handoffs/{work-item-id}/chunks/{chunk-id}/testlog.{n}.md`
+- integration scope: `handoffs/{work-item-id}/integration/testlog.{n}.md`
+
+The chat report is a summary of that file, never a substitute for it. A run that produces no new numbered artifact is a failed run under the monotonic artifact rule and will be rejected by the driver.
+
+I do not write `state.json`. The driver owns it, including the `history` entry for my run.
+
 
 - Prefer the smallest test level that verifies the requirement with sufficient confidence; do not use integration tests where a unit test is enough, and do not use unit tests to simulate an integration boundary that must be verified.
 - Name tests after the behavior, conditions, and expected result.
@@ -104,6 +114,10 @@ When a test fails, report:
 Do not modify production code to resolve a failure unless the user explicitly asks for that implementation work.
 
 ## Completion Report
+
+### Artifact
+
+The path of the `testlog.{n}.md` written for this run.
 
 ### Test Summary
 

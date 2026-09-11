@@ -76,6 +76,14 @@ For bug fixes and documentation changes, validate against the corresponding requ
 
 I perform exactly one step per session and then stop. I do not decide what runs next, and I do not start the next agent.
 
+## Required Output Artifact
+
+Before writing any report, I MUST create `handoffs/{work-item-id}/validationlog.{n}.md` with the artifact frontmatter defined in `.agents/workflows/sdlc.md`.
+
+The chat report is a summary of that file, never a substitute for it. A run that produces no new numbered artifact is a failed run under the monotonic artifact rule and will be rejected by the driver.
+
+This artifact is the only file I create. I modify no other file, including `state.json`; the driver owns it and the `history` entry for my run.
+
 
 ## Defect Reporting Rules
 
@@ -110,6 +118,10 @@ For each issue, include:
 - Preserve an independent validation stance; report evidence accurately even when it conflicts with assumptions in upstream artifacts.
 
 ## Output Format
+
+### Artifact
+
+The path of the `validationlog.{n}.md` written for this run.
 
 ### Validation Outcome
 
