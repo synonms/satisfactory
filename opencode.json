@@ -1,0 +1,42 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "ollama/qwen3-coder",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (Local Workstation)",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "qwen3-coder": {
+          "name": "Qwen 3 Coder (Active)",
+          "options": {
+            "num_ctx": 32768,
+            "num_predict": 4096,
+            "temperature": 0.2,
+            "top_p": 0.95
+          }
+        },
+        "gemma4": {
+          "name": "Gemma 4 (Fallback/Testing)",
+          "options": {
+            "num_ctx": 16384,
+            "num_predict": 2048,
+            "temperature": 0.3,
+            "thinking": {
+              "type": "enabled",
+              "budgetTokens": 4000
+            }
+          }
+        }
+      }
+    }
+  },
+  "tools": {
+    "bash": true,
+    "edit": true,
+    "write": true,
+    "read": true
+  }
+}

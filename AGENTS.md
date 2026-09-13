@@ -1,4 +1,7 @@
-# Software Factory Framework
+# Satisfactory AI Software Factory
+
+## Overview
+`Satisfactory` is an AI software factory intended to help enable agentic engineering in the Software Development Lifecyle (SDLC).
 
 ## Purpose
 This file is the entry point for agents working in this repository. Use it to find the right workflow, rule, skill, or reference doc instead of carrying all guidance in one place.
@@ -38,6 +41,7 @@ Each agent runs in its own session with a fresh context window and performs exac
 - .NET coding rules: `.agents/rules/dotnet-coding-rules.md`
 - .NET implementation reference: `.agents/resources/dotnet-implementation-reference.md`
 - Specification document template: `.agents/resources/specification-template.md`
+- State.json file template and documentation: `.agents/resources/state-json-template.md`
 - Azure DevOps MCP setup: `.agents/resources/azure-devops-mcp-setup.md`
 
 ## Routing rule
