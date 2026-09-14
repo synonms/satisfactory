@@ -44,7 +44,7 @@ I transform user stories and chores into comprehensive, implementation-ready tec
 
 ## My Process
 
-1. **Analyse** the user story/chore and acceptance criteria from the Markdown file `board/new/{work-item-id}.{title}.{type}.md`, where `work-item-id` is the unique identifier for the work item, `title` is a kebab-case short human-readable name for the item, and `type` is the work item type (user-story, bug, chore, documentation), e.g. `00001-1.add-login-feature.user-story.md`.
+1. **Analyse** the user story/chore and acceptance criteria from the work item located by ID using `.agents/resources/work-items.md`.
 2. **Check** whether this is a remediation iteration. If `handoffs/{work-item-id}/validationlog.{n}.md` exists and reports a specification defect, read the latest one first and treat its findings as the primary input; the pipeline has returned the work item to me because the requirement itself, not the implementation, was wrong.
 3. **Design** the technical approach: affected layers, new or changed contracts, data flow, and the architectural components involved (for example: domain/API layer, persistence, client API, frontend UI, integration tests).
 4. **Split** the work into chunks, one per technology/programming-language grouping (for example ".NET backend", "React frontend"), so each chunk can be handed to a specialised `software-engineer` agent. Give each chunk a stable kebab-case `chunk-id` (for example `dotnet-backend`, `react-frontend`) which becomes its artifact folder, and state its dependencies on other chunks explicitly, because chunks are implemented sequentially in dependency order.
@@ -55,7 +55,7 @@ I perform exactly one step per session and then stop. Routing to the next agent 
 
 ## Ideal Inputs
 
-- User story/chore work item Markdown document with clear acceptance criteria in `board/new/`
+- User story/chore work item with clear acceptance criteria, located by ID according to `.agents/resources/work-items.md`
 - Business requirements and constraints
 - Existing architectural patterns
 - Domain models and relationships

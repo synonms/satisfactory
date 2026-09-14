@@ -33,7 +33,7 @@ I work on:
 
 ## Required Input
 
-1. The documentation work item in `board/new/{work-item-id}.{title}.documentation.md`, including its **Description** and **Content** sections.
+1. The documentation work item located by ID using `.agents/resources/work-items.md`, including its **Description** and **Content** sections.
 2. `handoffs/{work-item-id}/state.json` for the current iteration number and any prior validation findings.
 3. Any previous `handoffs/{work-item-id}/validationlog.{n}.md` when this is a remediation iteration.
 4. The source files, configuration, and existing documentation the change describes.

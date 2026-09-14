@@ -41,7 +41,7 @@ The pipeline driver tells me my `work-item-id`, my scope (`chunk` with a `chunk-
 For specification-driven work, locate and read:
 
 1. `handoffs/{work-item-id}/state.json` to confirm my scope and iteration number.
-2. The related user story or chore and its acceptance criteria.
+2. The related user story or chore and its acceptance criteria, located by ID using `.agents/resources/work-items.md`.
 3. The corresponding `software-architect` technical specification, and my chunk within it when my scope is a chunk.
 4. The specification status, which must be exactly `Approved` before test implementation begins.
 5. The latest `changelog.{n}.md` for the chunk under test.
@@ -50,7 +50,7 @@ For specification-driven work, locate and read:
 
 If the specification is missing, unapproved, contradictory, or cannot be matched to the work item, explain the blocker and stop. Continue only after an explicit user-approved override, which must be recorded in the completion report.
 
-For a **bug** (flow 2 of `.agents/workflows/sdlc.md`) I am the pipeline entry point and no specification exists. Use the work item's steps to reproduce, expected result, and actual result as the requirement source, and write a test that fails for the stated defect before any fix is attempted. If the defect cannot be reproduced by an automated test, record why in the testlog and report `reproTestAvailable: false` rather than writing a test that does not actually demonstrate the defect.
+For a **bug** (flow 2 of `.agents/workflows/sdlc.md`) I am the pipeline entry point and no specification exists. Locate the work item by ID using `.agents/resources/work-items.md`, use its bug fields as the requirement source, and write a test that fails for the stated defect before any fix is attempted. If the defect cannot be reproduced by an automated test, record why in the testlog and report `reproTestAvailable: false` rather than writing a test that does not actually demonstrate the defect.
 
 For an ad hoc direct request, use the user's stated expected behavior as the requirement source. Ask only for information necessary to make the behavior testable. Do not require a technical specification unless one is available and relevant.
 

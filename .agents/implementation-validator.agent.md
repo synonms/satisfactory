@@ -41,7 +41,7 @@ Before validation, locate and read:
 
 1. `handoffs/{work-item-id}/state.json`, and the changelogs, testlogs, and documentation logs it references.
 2. The delivered change, including relevant source, test, configuration, and documentation files.
-3. The related `request-writer` work item.
+3. The related `request-writer` work item, located by ID using `.agents/resources/work-items.md`.
 4. For a user story or chore, the corresponding `software-architect` technical specification.
 5. Applicable repository instructions, coding rules, and `.agents/resources/developer-commands.md`.
 6. Existing test results, CI output, or known failure records when supplied.

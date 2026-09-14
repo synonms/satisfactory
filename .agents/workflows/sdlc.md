@@ -1,6 +1,6 @@
 # SDLC Workflow
 
-The `sdlc` workflow is the orchestration contract for the AI Software Factory. It defines how a work item moves from `board/new/` to a delivered, validated change.
+The `sdlc` workflow is the orchestration contract for the AI Software Factory. It defines how a work item moves from intake to a delivered, validated change. Work-item structure, status values, and current board storage are defined in `.agents/resources/work-items.md`.
 
 ## Core principle
 
@@ -33,7 +33,7 @@ handoffs/
     validationlog.{n}.md
 ```
 
-`state.json` is the single source of truth for routing. Markdown files are the payload: human-reviewable, git-diffable, and never parsed for control flow.
+`state.json` is the single source of truth for routing. Work-item records are the requirement payload. The current Markdown files are human-reviewable and git-diffable, but agents must not depend on Markdown paths as the durable storage contract.
 
 Iteration numbers are scoped to the chunk, not to the work item. Two chunks may both be on `changelog.2.md` without collision.
 
@@ -68,7 +68,10 @@ Iteration numbers are scoped to the chunk, not to the work item. Two chunks may 
     "maxIntegrationLoops": 3,
     "maxValidationLoops": 3,
     "maxTotalAgentRuns": 40,
-    "totalAgentRuns": 17
+    "totalAgentRuns": 17,
+    "totalDurationSeconds": 620,
+    "totalTokens": 145000,
+    "totalEstimatedCostUsd": 0.58
   },
   "escalations": [],
   "history": [
@@ -77,7 +80,15 @@ Iteration numbers are scoped to the chunk, not to the work item. Two chunks may 
       "agent": "software-engineer",
       "chunk": "dotnet-backend",
       "result": "implemented",
-      "artifact": "handoffs/00001-1/chunks/dotnet-backend/changelog.2.md"
+      "artifact": "handoffs/00001-1/chunks/dotnet-backend/changelog.2.md",
+      "metrics": {
+        "durationSeconds": 42,
+        "inputTokens": 14200,
+        "outputTokens": 1850,
+        "totalTokens": 16050,
+        "model": "claude-3-7-sonnet",
+        "estimatedCostUsd": 0.05
+      }
     }
   ]
 }
@@ -86,6 +97,7 @@ Iteration numbers are scoped to the chunk, not to the work item. Two chunks may 
 ### Ownership rules
 
 - Only the driver mutates `state.json`. That includes `state`, `chunks[].state`, attempt counters, `budget`, `escalations`, and `history`.
+- Only the driver changes an existing work item's lifecycle state or board location after `request-writer` creates it. Follow `.agents/resources/work-items.md` for the `Status` field and current `board/` movement rules.
 - Agents write their numbered artifact and report an outcome. They propose; they do not route, and they do not touch `state.json`.
 - The driver applies the previous run's transition at the start of the next dispatch, by comparing `state.json` against the artifacts on disk. A missing expected artifact is a failed run under the monotonic artifact rule.
 - `state.json` must be **self-sufficient**. A fresh agent needs only its work item, its specification chunk, and the artifact paths named in state. It must never depend on conversation history.

@@ -1,6 +1,6 @@
 # Specification: {Feature/Work Item Name}
 
-- **Work item**: {link to the related user story or chore in `board/new/`}
+- **Work item**: {link or identifier for the related user story or chore located according to `.agents/resources/work-items.md`}
 - **Status**: Draft
 - **Author**: software-architect
 - **Approval override used**: {None | Yes - reason}
