@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synonms.Satisfactory.Playground.Api", "Synonms.Satisfactory.Playground.Api\Synonms.Satisfactory.Playground.Api.csproj", "{DFEE5F6D-E8D3-4076-B1C7-96AD6AD4D4CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synonms.Satisfactory.Playground.Ui", "Synonms.Satisfactory.Playground.Ui\Synonms.Satisfactory.Playground.Ui.csproj", "{C05461B5-4989-4411-B930-81FA1FCE7C0F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synonms.Satisfactory.Playground.Contract", "Synonms.Satisfactory.Playground.Contract\Synonms.Satisfactory.Playground.Contract.csproj", "{EC3C49DF-A8E6-446E-AE76-5423D8C00BEA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synonms.Satisfactory.Playground.AppHost", "Synonms.Satisfactory.Playground.AppHost\Synonms.Satisfactory.Playground.AppHost.csproj", "{7EA921A5-D1D6-4E0F-B79C-6A99AB3F52B5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synonms.Satisfactory.Playground.ServiceDefaults", "Synonms.Satisfactory.Playground.ServiceDefaults\Synonms.Satisfactory.Playground.ServiceDefaults.csproj", "{80EB8FF0-5221-45C5-9836-AF9695ACC202}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DFEE5F6D-E8D3-4076-B1C7-96AD6AD4D4CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DFEE5F6D-E8D3-4076-B1C7-96AD6AD4D4CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DFEE5F6D-E8D3-4076-B1C7-96AD6AD4D4CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DFEE5F6D-E8D3-4076-B1C7-96AD6AD4D4CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C05461B5-4989-4411-B930-81FA1FCE7C0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C05461B5-4989-4411-B930-81FA1FCE7C0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C05461B5-4989-4411-B930-81FA1FCE7C0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C05461B5-4989-4411-B930-81FA1FCE7C0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC3C49DF-A8E6-446E-AE76-5423D8C00BEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC3C49DF-A8E6-446E-AE76-5423D8C00BEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC3C49DF-A8E6-446E-AE76-5423D8C00BEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC3C49DF-A8E6-446E-AE76-5423D8C00BEA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EA921A5-D1D6-4E0F-B79C-6A99AB3F52B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EA921A5-D1D6-4E0F-B79C-6A99AB3F52B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EA921A5-D1D6-4E0F-B79C-6A99AB3F52B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EA921A5-D1D6-4E0F-B79C-6A99AB3F52B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80EB8FF0-5221-45C5-9836-AF9695ACC202}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80EB8FF0-5221-45C5-9836-AF9695ACC202}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80EB8FF0-5221-45C5-9836-AF9695ACC202}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80EB8FF0-5221-45C5-9836-AF9695ACC202}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

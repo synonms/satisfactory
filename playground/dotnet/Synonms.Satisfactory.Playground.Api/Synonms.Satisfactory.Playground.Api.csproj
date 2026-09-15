@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Synonms.Satisfactory.Playground.Contract\Synonms.Satisfactory.Playground.Contract.csproj" />
+      <ProjectReference Include="..\Synonms.Satisfactory.Playground.ServiceDefaults\Synonms.Satisfactory.Playground.ServiceDefaults.csproj" />
+    </ItemGroup>
+
+</Project>

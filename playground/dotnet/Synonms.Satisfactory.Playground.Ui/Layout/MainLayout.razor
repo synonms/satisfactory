@@ -1,0 +1,19 @@
+﻿@inherits LayoutComponentBase
+
+<CarbonBlazorShell ProductName="Playground" Theme="CarbonBlazorTheme.Gray10" HeaderThemeOverride="CarbonBlazorTheme.Gray100" SidebarThemeOverride="CarbonBlazorTheme.White">
+    <UserPanel>
+        <CarbonBlazorHeaderActionLink NavigationItem="@NavigationItem.Create("Login", "/authentication/login")" />
+    </UserPanel>
+    <SwitcherPanel>
+    </SwitcherPanel>
+    <SideNav>
+        <CarbonBlazorSidebarLink NavigationItem="@NavigationItem.Create(CarbonBlazorIconType.Dashboard, "Dashboard", "/")" />
+        <CarbonBlazorSidebarLink NavigationItem="@NavigationItem.Create(CarbonBlazorIconType.Group, "Agents", "/agents")" />
+    </SideNav>
+    
+    <Body>@Body</Body>
+</CarbonBlazorShell>
+
+@code {
+
+}
