@@ -10,6 +10,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synonms.Satisfactory.Playgr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synonms.Satisfactory.Playground.ServiceDefaults", "Synonms.Satisfactory.Playground.ServiceDefaults\Synonms.Satisfactory.Playground.ServiceDefaults.csproj", "{80EB8FF0-5221-45C5-9836-AF9695ACC202}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synonms.Satisfactory.Playground.Api.Tests.Integration", "Synonms.Satisfactory.Playground.Api.Tests.Integration\Synonms.Satisfactory.Playground.Api.Tests.Integration.csproj", "{72DBBF80-049C-4081-9543-79A55C88D12E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{C8D593F7-9513-4121-BF39-EFC8693F5BC7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +40,12 @@ Global
 		{80EB8FF0-5221-45C5-9836-AF9695ACC202}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{80EB8FF0-5221-45C5-9836-AF9695ACC202}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{80EB8FF0-5221-45C5-9836-AF9695ACC202}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72DBBF80-049C-4081-9543-79A55C88D12E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72DBBF80-049C-4081-9543-79A55C88D12E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72DBBF80-049C-4081-9543-79A55C88D12E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72DBBF80-049C-4081-9543-79A55C88D12E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{72DBBF80-049C-4081-9543-79A55C88D12E} = {C8D593F7-9513-4121-BF39-EFC8693F5BC7}
 	EndGlobalSection
 EndGlobal

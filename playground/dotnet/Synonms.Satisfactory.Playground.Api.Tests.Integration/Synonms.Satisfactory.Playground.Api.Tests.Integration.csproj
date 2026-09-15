@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <OutputType>Exe</OutputType>
+        <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="10.0.1"/>
+        <PackageReference Include="xunit.v3" Version="4.0.1" />
+        <PackageReference Include="NSubstitute" Version="6.2.0" />
+        <PackageReference Include="Aspire.Hosting.Testing" Version="13.5.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Synonms.Satisfactory.Playground.Api\Synonms.Satisfactory.Playground.Api.csproj" />
+        <ProjectReference Include="..\Synonms.Satisfactory.Playground.AppHost\Synonms.Satisfactory.Playground.AppHost.csproj" />
+        <ProjectReference Include="..\Synonms.Satisfactory.Playground.Contract\Synonms.Satisfactory.Playground.Contract.csproj" />
+    </ItemGroup>
+    
+</Project>
