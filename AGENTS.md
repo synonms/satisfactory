@@ -32,7 +32,7 @@ Each agent runs in its own session with a fresh context window and performs exac
 - For documentation work items, route to `documentation-writer`.
 
 ## Skills
-`.agents/skills/` is currently empty. Add a skill doc when a reusable implementation pattern emerges, and list it here.
+- **request-writing** - Turn a free-text request or Azure DevOps ticket into a work item on the software-factory board.
 
 ## Reference resources
 - SDLC orchestration workflow: `.agents/workflows/sdlc.md`
@@ -46,3 +46,7 @@ Each agent runs in its own session with a fresh context window and performs exac
 
 ## Routing rule
 Keep this file short. Put durable rules in rule docs, step-by-step procedures in skills or workflows, and descriptive background material in resources. Do not reference a file here until it exists.
+
+## Playground
+The `playground/` folder contains sample code projects for demonstrating the software factory and trying out new capabilities.
+- `playground/dotnet/` - A .NET solution with WebAPI backend, Blazor UI and Aspire orchestration

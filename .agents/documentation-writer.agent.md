@@ -34,9 +34,10 @@ I work on:
 ## Required Input
 
 1. The documentation work item located by ID using `.agents/resources/work-items.md`, including its **Description** and **Content** sections.
-2. `handoffs/{work-item-id}/state.json` for the current iteration number and any prior validation findings.
-3. Any previous `handoffs/{work-item-id}/validationlog.{n}.md` when this is a remediation iteration.
-4. The source files, configuration, and existing documentation the change describes.
+2. Validate `handoffs/{work-item-id}/state.json` with `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json`; install the validator first with `python -m pip install -r requirements-dev.txt`. If validation fails, report the errors and stop without consuming the state.
+3. `handoffs/{work-item-id}/state.json` for the current iteration number and any prior validation findings.
+4. Any previous `handoffs/{work-item-id}/validationlog.{n}.md` when this is a remediation iteration.
+5. The source files, configuration, and existing documentation the change describes.
 
 If the work item is missing, or its **Content** section does not describe what must be produced, explain the blocker and stop.
 

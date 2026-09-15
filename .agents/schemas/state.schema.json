@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://synonms.github.io/satisfactory/.agents/schemas/state.schema.json",
+  "title": "Satisfactory SDLC state",
+  "description": "Control file used to route a work item through the Satisfactory SDLC workflow.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "workItemId",
+    "type",
+    "flow",
+    "state",
+    "specificationStatus",
+    "branch",
+    "activeChunk",
+    "chunks",
+    "integration",
+    "validation",
+    "budget",
+    "escalations",
+    "history"
+  ],
+  "properties": {
+    "workItemId": { "type": "string", "minLength": 1 },
+    "type": { "enum": ["user-story", "chore", "bug", "documentation"] },
+    "flow": { "enum": ["flow-1", "flow-2", "flow-3"] },
+    "state": {
+      "enum": [
+        "specification-draft",
+        "specification-approved",
+        "chunk-implementation",
+        "chunk-testing",
+        "integration-testing",
+        "validation",
+        "bug-repro-test",
+        "bug-fix",
+        "documentation",
+        "ready-for-user",
+        "done",
+        "blocked"
+      ]
+    },
+    "specificationStatus": { "enum": [null, "Draft", "Approved"] },
+    "branch": { "type": ["string", "null"] },
+    "activeChunk": { "type": ["string", "null"] },
+    "chunks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/chunk" }
+    },
+    "integration": { "$ref": "#/$defs/integration" },
+    "validation": { "$ref": "#/$defs/validation" },
+    "budget": { "$ref": "#/$defs/budget" },
+    "escalations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/escalation" }
+    },
+    "history": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/historyEntry" }
+    }
+  },
+  "$defs": {
+    "nonNegativeInteger": { "type": "integer", "minimum": 0 },
+    "nonNegativeNumber": { "type": "number", "minimum": 0 },
+    "signature": { "type": ["string", "null"] },
+    "chunk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "technology", "dependsOn", "state", "implementAttempts", "testAttempts", "lastFailureSignature", "latestChangelog", "latestTestlog"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "technology": { "type": "string", "minLength": 1 },
+        "dependsOn": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "state": { "enum": ["not-started", "implemented", "tests-passing", "tests-failing", "blocked"] },
+        "implementAttempts": { "$ref": "#/$defs/nonNegativeInteger" },
+        "testAttempts": { "$ref": "#/$defs/nonNegativeInteger" },
+        "lastFailureSignature": { "$ref": "#/$defs/signature" },
+        "latestChangelog": { "type": ["string", "null"] },
+        "latestTestlog": { "type": ["string", "null"] }
+      }
+    },
+    "integration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "attempts", "lastFailureSignature"],
+      "properties": {
+        "state": { "enum": ["not-started", "in-progress", "passed", "failed"] },
+        "attempts": { "$ref": "#/$defs/nonNegativeInteger" },
+        "lastFailureSignature": { "$ref": "#/$defs/signature" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "attempts"],
+      "properties": {
+        "outcome": { "enum": [null, "Passed", "Failed", "Blocked"] },
+        "attempts": { "$ref": "#/$defs/nonNegativeInteger" }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxChunkRemediationLoops", "maxIntegrationLoops", "maxValidationLoops", "maxTotalAgentRuns", "totalAgentRuns"],
+      "properties": {
+        "maxChunkRemediationLoops": { "$ref": "#/$defs/nonNegativeInteger" },
+        "maxIntegrationLoops": { "$ref": "#/$defs/nonNegativeInteger" },
+        "maxValidationLoops": { "$ref": "#/$defs/nonNegativeInteger" },
+        "maxTotalAgentRuns": { "$ref": "#/$defs/nonNegativeInteger" },
+        "totalAgentRuns": { "$ref": "#/$defs/nonNegativeInteger" },
+        "totalDurationSeconds": { "$ref": "#/$defs/nonNegativeNumber" },
+        "totalTokens": { "$ref": "#/$defs/nonNegativeInteger" },
+        "totalEstimatedCostUsd": { "$ref": "#/$defs/nonNegativeNumber" }
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["requirement", "evidence", "attempts", "recommendedAction"],
+      "properties": {
+        "requirement": { "type": "string", "minLength": 1 },
+        "evidence": { "type": "string", "minLength": 1 },
+        "attempts": { "$ref": "#/$defs/nonNegativeInteger" },
+        "recommendedAction": { "type": "string", "minLength": 1 }
+      }
+    },
+    "historyEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "agent", "chunk", "result", "artifact"],
+      "properties": {
+        "ts": { "type": "string", "format": "date-time" },
+        "agent": { "type": "string", "minLength": 1 },
+        "chunk": { "type": ["string", "null"] },
+        "result": { "type": "string", "minLength": 1 },
+        "artifact": { "type": ["string", "null"] },
+        "metrics": { "$ref": "#/$defs/metrics" }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["durationSeconds", "inputTokens", "outputTokens", "totalTokens", "model", "estimatedCostUsd"],
+      "properties": {
+        "durationSeconds": { "$ref": "#/$defs/nonNegativeNumber" },
+        "inputTokens": { "$ref": "#/$defs/nonNegativeInteger" },
+        "outputTokens": { "$ref": "#/$defs/nonNegativeInteger" },
+        "totalTokens": { "$ref": "#/$defs/nonNegativeInteger" },
+        "model": { "type": "string", "minLength": 1 },
+        "estimatedCostUsd": { "$ref": "#/$defs/nonNegativeNumber" }
+      }
+    }
+  }
+}

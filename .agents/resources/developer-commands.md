@@ -8,6 +8,14 @@ Canonical build, test, and validation commands. Agents must use these rather tha
 
 PowerShell (`pwsh`) on Windows. Chain commands with `;`.
 
+## JSON Schema
+
+Run from the repository root. Requires Python 3 and the development tools installed with `python -m pip install -r requirements-dev.txt`; the command works on Windows, macOS, and Linux.
+
+| Purpose | Command |
+| --- | --- |
+| Validate a workflow state | `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json` |
+
 ## .NET
 
 Run from the repository root unless stated otherwise.

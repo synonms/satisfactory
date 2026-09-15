@@ -97,6 +97,7 @@ Iteration numbers are scoped to the chunk, not to the work item. Two chunks may 
 ### Ownership rules
 
 - Only the driver mutates `state.json`. That includes `state`, `chunks[].state`, attempt counters, `budget`, `escalations`, and `history`.
+- Before any driver or agent consumes an existing `state.json`, validate it with `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json`. Install the validator first with `python -m pip install -r requirements-dev.txt`. On validation failure, do not consume or modify the file; report the validation errors and treat the work item as blocked pending correction.
 - Only the driver changes an existing work item's lifecycle state or board location after `request-writer` creates it. Follow `.agents/resources/work-items.md` for the `Status` field and current `board/` movement rules.
 - Agents write their numbered artifact and report an outcome. They propose; they do not route, and they do not touch `state.json`.
 - The driver applies the previous run's transition at the start of the next dispatch, by comparing `state.json` against the artifacts on disk. A missing expected artifact is a failed run under the monotonic artifact rule.

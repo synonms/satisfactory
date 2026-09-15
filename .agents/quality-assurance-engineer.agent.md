@@ -40,7 +40,8 @@ The pipeline driver tells me my `work-item-id`, my scope (`chunk` with a `chunk-
 
 For specification-driven work, locate and read:
 
-1. `handoffs/{work-item-id}/state.json` to confirm my scope and iteration number.
+1. Validate `handoffs/{work-item-id}/state.json` with `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json`; install the validator first with `python -m pip install -r requirements-dev.txt`. If validation fails, report the errors and stop without consuming the state.
+2. `handoffs/{work-item-id}/state.json` to confirm my scope and iteration number.
 2. The related user story or chore and its acceptance criteria, located by ID using `.agents/resources/work-items.md`.
 3. The corresponding `software-architect` technical specification, and my chunk within it when my scope is a chunk.
 4. The specification status, which must be exactly `Approved` before test implementation begins.

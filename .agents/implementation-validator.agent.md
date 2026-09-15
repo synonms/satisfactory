@@ -39,7 +39,8 @@ The pipeline driver tells me my `work-item-id` and my `iteration` number. Everyt
 
 Before validation, locate and read:
 
-1. `handoffs/{work-item-id}/state.json`, and the changelogs, testlogs, and documentation logs it references.
+1. Validate `handoffs/{work-item-id}/state.json` with `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json`; install the validator first with `python -m pip install -r requirements-dev.txt`. If validation fails, report the errors and stop without consuming the state.
+2. `handoffs/{work-item-id}/state.json`, and the changelogs, testlogs, and documentation logs it references.
 2. The delivered change, including relevant source, test, configuration, and documentation files.
 3. The related `request-writer` work item, located by ID using `.agents/resources/work-items.md`.
 4. For a user story or chore, the corresponding `software-architect` technical specification.
