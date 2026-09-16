@@ -32,7 +32,7 @@ Each agent runs in its own session with a fresh context window and performs exac
 - For documentation work items, route to `documentation-writer`.
 
 ## Skills
-- **request-writing** - Turn a free-text request or Azure DevOps ticket into a work item on the software-factory board.
+- **work-item-writing** - Turn a free-text request or Azure DevOps ticket into a work item on the software-factory board.
 
 ## Reference resources
 - SDLC orchestration workflow: `.agents/workflows/sdlc.md`

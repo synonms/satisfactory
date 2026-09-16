@@ -245,3 +245,92 @@ The generator reads the workbench artifacts and emits the packet. The agent's jo
 
 Two forms: `handoff.md` is what the human reads. `handoff.json` is what the next agent loads. Both come from the same source artifacts. If they diverge, the JSON wins.
 
+
+
+```mermaid
+flowchart TD
+  subgraph Shared Docs
+    WI_STATE[("{work-item-id}/state.json")]
+    BOARD[("board/board.jsonl")]
+  end
+  subgraph Work Item Creation
+    REQUEST_WRITER(("request-writer"))
+    CATEGORISE{"Categorise"}
+    USER_STORY_TICKET[("{work_item_id}.{title}.user-story.md")]   
+    CHORE_TICKET[("{work_item_id}.{title}.chore.md")]   
+    BUG_TICKET[("{work_item_id}.{title}.bug.md")]   
+    DOC_TICKET[("{work_item_id}.{title}.documentation.md")]   
+  end
+  subgraph Feature Flow
+    SOFTWARE_ARCHITECT(("software-architect"))
+    SPECIFICATION[("{work_item_id}.specification.md \n - Tasks[{work_item_id}-1] \n... \n - Tasks[{work_item_id}-n]")]   
+    HUMAN[["Human Review"]]
+  end
+  START[Request] --> REQUEST_WRITER
+  REQUEST_WRITER --> CATEGORISE
+  CATEGORISE -->|User Story| USER_STORY_TICKET
+  CATEGORISE -->|Chore| CHORE_TICKET
+  CATEGORISE -->|Bug| BUG_TICKET
+  CATEGORISE -->|Documentation| DOC_TICKET
+  USER_STORY_TICKET --> SOFTWARE_ARCHITECT
+  CHORE_TICKET --> SOFTWARE_ARCHITECT
+  SOFTWARE_ARCHITECT --> SPECIFICATION
+  SPECIFICATION --> HUMAN
+```
+
+```mermaid
+flowchart TD
+  subgraph Task 1
+    SOFTWARE_ENGINEER_1(("software-engineer"))
+    HO_IMPLEMENTATION_1[("{work_item_id}-1.{iteration}.implementation.md")]
+    QA_ENGINEER_1(("quality-assurance-engineer (unit)"))
+    HO_TESTING_1[("{work_item_id}-1.{iteration}.testing.md")]
+    REVIEWER_1(("reviewer"))
+    HO_REVIEW_1[("{work_item_id}-1.{iteration}.review.md")]
+  end
+  subgraph Task N
+    SOFTWARE_ENGINEER_N(("software-engineer"))
+    HO_IMPLEMENTATION_N[("{work_item_id}-N.{iteration}.implementation.md")]
+    QA_ENGINEER_N(("quality-assurance-engineer (unit)"))
+    HO_TESTING_N[("{work_item_id}-N.{iteration}.testing.md")]
+    REVIEWER_N(("reviewer"))
+    HO_REVIEW_N[("{work_item_id}-N.{iteration}.review.md")]
+  end
+  subgraph Integration
+    INTEGRATION_QA_ENGINEER(("quality-assurance-engineer (integration)"))
+    HO_INTEGRATION_TESTING[("{work_item_id}.{iteration}.integration-testing.md")]
+    VALIDATOR(("validator"))
+    HUMAN[["Human Review"]]
+  end
+  TASK1_START["Tasks[{work_item_id}-1]"] --> SOFTWARE_ENGINEER_1
+  SOFTWARE_ENGINEER_1 -.-> HO_IMPLEMENTATION_1
+  SOFTWARE_ENGINEER_1 --> QA_ENGINEER_1
+  QA_ENGINEER_1 -.-> HO_TESTING_1
+  QA_ENGINEER_1 -->|Fail| SOFTWARE_ENGINEER_1
+  QA_ENGINEER_1 -->|Pass| REVIEWER_1
+  REVIEWER_1 -.-> HO_REVIEW_1
+  REVIEWER_1 -->|Fail| SOFTWARE_ENGINEER_1
+  REVIEWER_1 -->|Pass| INTEGRATION_QA_ENGINEER
+
+  TASKN_START["Tasks[{work_item_id}-N]"] --> SOFTWARE_ENGINEER_N
+  SOFTWARE_ENGINEER_N -.-> HO_IMPLEMENTATION_N
+  SOFTWARE_ENGINEER_N --> QA_ENGINEER_N
+  QA_ENGINEER_N -.-> HO_TESTING_N
+  QA_ENGINEER_N -->|Fail| SOFTWARE_ENGINEER_N
+  QA_ENGINEER_N -->|Pass| REVIEWER_N
+  REVIEWER_N -.-> HO_REVIEW_N
+  REVIEWER_N -->|Fail| SOFTWARE_ENGINEER_N
+  REVIEWER_N -->|Pass| INTEGRATION_QA_ENGINEER
+
+  INTEGRATION_QA_ENGINEER -.-> HO_INTEGRATION_TESTING
+  INTEGRATION_QA_ENGINEER -->|Fail| X1(TODO: Where?)
+  INTEGRATION_QA_ENGINEER -->|Pass| VALIDATOR
+  VALIDATOR -->|Fail| X2(TODO: Where?)
+  VALIDATOR -->|Pass| HUMAN
+  HUMAN -->|Fail| X3(TODO: Where?)
+  HUMAN -->|Approved| DONE["Done"]
+
+```
+
+## TODO
+- Fold chunks into user stories (perhaps add category [feature | chore])

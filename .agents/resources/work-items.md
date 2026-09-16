@@ -4,7 +4,7 @@ This document defines the work-item contract for the AI Software Factory. Agents
 
 ## Purpose
 
-A work item is the stakeholder-readable unit of requested change. It captures scope, type, acceptance or validation requirements, and lifecycle state before the SDLC workflow creates implementation handoffs.
+A work item is the stakeholder-readable unit of requested change. It captures scope, type, acceptance or validation requirements, and lifecycle state before the SDLC workflow creates implementation handoffs. A single change request may be broken down into multiple work items, but only if the work items are entirely independent and can be implemented in isolation.
 
 Work items are currently stored as Markdown files on the Kanban board, but agents should treat that as an adapter detail. The durable contract is the work-item identity, type, required fields, status values, and lifecycle transitions. A future store, such as SQLite, must preserve those semantics even if paths and filenames are replaced by queries and records.
 
@@ -18,6 +18,8 @@ Each work item has exactly one type:
 | Bug | `bug` | A defect in existing functionality that needs correction |
 | Chore | `chore` | Maintenance, refactoring, infrastructure, or technical debt without direct user-facing value |
 | Documentation | `documentation` | Creating, correcting, or updating repository documentation |
+
+ Order of importance is `User Story` > `Chore` > `Bug` > `Documentation`. If a request for change contains work that spans multiple types and the work cannot be cleanly split into independent work items, then create a singular work item using the category of higher importance. For example, if analysis shows that some elements are classified as `User Story` and some elements are `Bug`, then create a work item of type `User Story` which encapsulates both pieces of work.
 
 ## Identity
 
@@ -39,7 +41,7 @@ board/
   done/{work-item-id}.{title}.{type}.md
 ```
 
-When creating work items, ensure `board/new/`, `board/in-progress/`, and `board/done/` exist. Save new work items to `board/new/`.
+When creating work items, ensure `board/new/`, `board/in-progress/`, and `board/done/` exist. If they do not then create them. Save new work items to `board/new/`.
 
 Filenames use `{work-item-id}.{title}.{type}.md`:
 
@@ -74,7 +76,7 @@ The folder is the current queueing mechanism. The `Status` field is the storage-
 6. If final-review remediation is requested for an existing requirement, the work item remains `Status: In Progress` in `board/in-progress/` while the driver routes remediation through `state.json`.
 7. Scope additions are not added to an in-progress work item. Create a separate work item instead.
 
-The driver is the only actor that changes lifecycle state after creation. Request-writing creates `New` work items; downstream agents treat work-item content as read-only.
+The driver is the only actor that changes lifecycle state after creation. work-item-writing creates `New` work items; downstream agents treat work-item content as read-only.
 
 ## Strict Markdown Template
 

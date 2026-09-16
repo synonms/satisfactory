@@ -1,11 +1,11 @@
 ---
-name: request-writing
-description: Use when turning a free-text request or Azure DevOps work item into approved, independently deliverable User Story, Bug, Chore, or Documentation tickets for the software-factory board.
+name: work-item-writing
+description: Use when turning a free-text request or Azure DevOps work item into approved, independently deliverable User Story, Bug, Chore, or Documentation work items for the software-factory board.
 ---
 
-# Request Writing
+# Work Item Writing
 
-Use this workflow when the request-writer agent receives an initial request. The work-item contract in `.agents/resources/work-items.md` is authoritative for identities, types, fields, templates, storage, and lifecycle values. Do not copy those definitions into this skill or invent a second contract.
+Use this workflow when the triage agent receives an initial request. The work-item contract in `.agents/resources/work-items.md` is authoritative for identities, types, fields, templates, storage, and lifecycle values. Do not copy those definitions into this skill or invent a second contract.
 
 ## 1. Normalize the request
 
@@ -30,7 +30,7 @@ Classify each independently deliverable change as exactly one of the types in `w
 - `chore` for maintenance, refactoring, infrastructure, or technical debt.
 - `documentation` for repository documentation work.
 
-Split mixed requests into separate work items. Each proposal should include the type, a short title, the intended outcome, and the acceptance or validation requirements appropriate to that type. Explain dependencies when one item must precede another, but do not merge independent items just to reflect ordering.
+Split mixed requests into separate work items, but only if the components are independently deliverable. Each proposal should include the type, a short title, the intended outcome, and the acceptance or validation requirements appropriate to that type. Explain dependencies when one item must precede another, but do not merge independent items just to reflect ordering.
 
 Present the proposed breakdown and wait for explicit user approval or requested changes. Revise the proposal as needed; do not write files before approval.
 
