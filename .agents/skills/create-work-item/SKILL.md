@@ -1,5 +1,5 @@
 ---
-name: work-item-writing
+name: create-work-item
 description: Use when turning a free-text request or Azure DevOps work item into approved, independently deliverable User Story, Bug, Chore, or Documentation work items for the software-factory board.
 ---
 
@@ -30,7 +30,7 @@ Classify each independently deliverable change as exactly one of the types in `w
 - `chore` for maintenance, refactoring, infrastructure, or technical debt.
 - `documentation` for repository documentation work.
 
-Split mixed requests into separate work items, but only if the components are independently deliverable. Each proposal should include the type, a short title, the intended outcome, and the acceptance or validation requirements appropriate to that type. Explain dependencies when one item must precede another, but do not merge independent items just to reflect ordering.
+Split mixed requests into separate work items, but only if the components are independently deliverable and have no risk of changes to the same files or functionality. Each proposal should include the type, a short title, the intended outcome, and the acceptance or validation requirements appropriate to that type. Explain dependencies when one item must precede another, but do not merge independent items just to reflect ordering.
 
 Present the proposed breakdown and wait for explicit user approval or requested changes. Revise the proposal as needed; do not write files before approval.
 
@@ -42,17 +42,17 @@ After approval:
 2. Allocate the next sequential request ID and update the adapter's ID store.
 3. Assign work-item sequence numbers starting at `1` for that request.
 4. Ensure the required board directories exist.
-5. Write one file per work item under `board/new/` using the exact template and filename rules from `work-items.md`.
+5. Write one file per work item under `board/{request-id}/{work-item-id}/` using the exact template and filename rules from `work-items.md`.
 6. Set every new item to `Status: New`.
 7. Include `Source` only when the request came from an external system, using the retrieved Azure DevOps HTML URL.
 8. Make acceptance criteria independently testable and preserve stable IDs.
 
-Do not modify existing work items, move items between lifecycle folders, or create `handoffs/` and `state.json`. Those are driver responsibilities.
+Do not modify existing work items, move items between lifecycle folders, or create any other files. Those are orchestrator responsibilities.
 
 ## 5. Report the result
 
-Report each created file path, work-item ID, type, and title. State that the items are ready to enter the SDLC workflow. Tell the user to run
-`.agents/prompts/next.prompt.md` against a selected work-item ID in a new chat session with a fresh context window.
+Report each created file path, work-item ID, type, and title. State that the items are ready to enter the SDLC workflow. For any user story or chore work items, tell the user to run
+`.agents/prompts/design.prompt.md` against the selected work-item ID in a new chat session with a fresh context window.
 
 If creation is blocked, report the exact missing input or failed operation and leave already-created records untouched. Do not claim that an item is ready if its file, required fields, or `Status: New` value could not be verified.
 
@@ -64,5 +64,4 @@ If creation is blocked, report the exact missing input or failed operation and l
 - [ ] Every item has exactly one valid type.
 - [ ] User approval was explicit before file creation.
 - [ ] IDs, templates, filenames, storage, and status follow `work-items.md`.
-- [ ] No `handoffs/` or `state.json` was created.
-- [ ] The final report identifies the next SDLC dispatcher action.
+- [ ] The final report presents links to all newly created work item files.

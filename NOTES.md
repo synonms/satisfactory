@@ -332,5 +332,39 @@ flowchart TD
 
 ```
 
+- board/
+  - .id
+  - board.jsonl
+  - 00001/
+    - 00001-1.work-item.md [triage]
+    - 00001-2.work-item.md [triage]
+    - 00001-1/
+      - 00001-1.state.json [orchestrator]
+      - 00001-1.specification.md [architect]
+      - task-1/
+        - 00001-1.task-1.implementation.1.md [engineer]
+        - 00001-1.task-1.testing.1.md [qa]
+        - 00001-1.task-1.review.1.md [reviewer]
+      - task-2/
+        - 00001-1.task-2.implementation.1.md [engineer]
+        - 00001-1.task-2.testing.1.md [qa]
+        - 00001-1.task-2.review.1.md [reviewer]
+      - 00001-1.integration.1.md [qa]
+      - 00001-1.validation.1.md [validator]
+    - 00001-2/
+      - 00001-2.state.json [orchestrator]
+      - 00001-2.specification.md [architect]
+      - task-1/
+        - 00001-2.task-1.implementation.1.md [engineer]
+        - 00001-2.task-1.testing.1.md [qa]
+        - 00001-2.task-1.review.1.md [reviewer]
+      - task-2/
+        - 00001-2.task-2.implementation.1.md [engineer]
+        - 00001-2.task-2.testing.1.md [qa]
+        - 00001-2.task-2.review.1.md [reviewer]
+      - 00001-2.integration.1.md [qa]
+      - 00001-2.validation.1.md [validator]
+
+
 ## TODO
 - Fold chunks into user stories (perhaps add category [feature | chore])

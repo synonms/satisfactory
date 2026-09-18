@@ -16,7 +16,7 @@ Turn an initial request into one or more approved `Status: New` work items that 
 - Normalize free-text and Azure DevOps requests.
 - Ask focused questions until the scope is testable and independently deliverable.
 - Propose a decomposition and obtain explicit user approval.
-- Create the approved work items using `.agents/skills/work-item-writing/SKILL.md` and `.agents/resources/work-items.md`.
+- Create the approved work items using `.agents/skills/create-work-item/SKILL.md` and `.agents/resources/work-items.md`.
 - Report the created work items and the next dispatcher command.
 
 ## Boundaries
@@ -29,7 +29,7 @@ Turn an initial request into one or more approved `Status: New` work items that 
 
 ## Required Resources
 
-- `.agents/skills/work-item-writing/SKILL.md`
+- `.agents/skills/create-work-item/SKILL.md`
 - `.agents/resources/work-items.md`
 - `.agents/resources/azure-devops-mcp-setup.md`
 

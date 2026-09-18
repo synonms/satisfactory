@@ -31,44 +31,39 @@ Each work item has exactly one type:
 
 ## Current Storage Adapter
 
-The current implementation stores each work item as one Markdown file under `board/`:
+The current implementation stores each work item as one Markdown file under `board/{request-id}/`:
 
 ```text
 board/
   .id
-  new/{work-item-id}.{title}.{type}.md
-  in-progress/{work-item-id}.{title}.{type}.md
-  done/{work-item-id}.{title}.{type}.md
+  {request-id}/
+    {work-item-id}.work-item.md
 ```
 
-When creating work items, ensure `board/new/`, `board/in-progress/`, and `board/done/` exist. If they do not then create them. Save new work items to `board/new/`.
+When creating work items, ensure `board/` and `board/{request-id}/` exist. If they do not then create them. Save new work items to `board/{request-id}/`.
 
-Filenames use `{work-item-id}.{title}.{type}.md`:
+Work item filenames use `{work-item-id}.work-item.md`, for example: `00001-1.work-item.md`.
 
-- `{work-item-id}` is the stable work-item ID.
-- `{title}` is a short kebab-case title.
-- `{type}` is the type slug.
-
-Example: `00001-1.add-login-feature.user-story.md`.
-
-Agents must locate a work item by ID, not by reconstructing its title. With the current adapter, search the board state folders for a filename beginning with `{work-item-id}.`.
+Agents must locate a work item by ID, not by reconstructing its title. With the current adapter, search the board state folders for `board/{request-id}/{work-item-id}.work-item.md`.
 
 ## Status Model
 
-The work-item file has a `Status` field. The current board adapter also uses folder location as an operational state. Both must agree.
+The work-item file has a `Status` field. 
 
-| Status field | Current location | Meaning |
-| --- | --- | --- |
-| `New` | `board/new/` | The work item has been accepted into the backlog and is ready for SDLC dispatch. |
-| `In Progress` | `board/in-progress/` | The SDLC workflow has started and handoff state exists or is being created. |
-| `Done` | `board/done/` | Delivery has passed validation and received final human approval. |
-| `Blocked` | `board/in-progress/` | The workflow cannot proceed without human intervention. |
+| Status field | Meaning |
+| --- | --- |
+| `New` | The work item has been accepted into the backlog and is ready for SDLC dispatch. |
+| `In Progress` | The SDLC workflow has started and handoff state exists or is being created. |
+| `Done` | Delivery has passed validation and received final human approval. |
+| `Blocked` | The workflow cannot proceed without human intervention. |
 
-The folder is the current queueing mechanism. The `Status` field is the storage-independent lifecycle value. Future adapters must expose the same lifecycle states without requiring folder movement.
+The `Status` field is the storage-independent lifecycle value. Future adapters must expose the same lifecycle states without requiring folder movement.
 
 ## State Management Process
 
-1. `request-writer` creates approved work-item tickets with `Status: New` in `board/new/`.
+# TODO: GOT TO HERE
+
+1. `request-writer` creates approved work-item tickets with `Status: New` in `board/{request-id}/`.
 2. The pipeline driver starts the SDLC workflow for a selected `New` item. When `handoffs/{work-item-id}/state.json` is created, the driver moves the work item to `board/in-progress/` and updates `Status: In Progress`.
 3. Agents read the work item as an immutable requirement source. They do not change the work-item status or move the work-item record.
 4. If a failsafe trips or the workflow reaches a terminal blocker, the driver sets `Status: Blocked` and keeps the item in `board/in-progress/` with the escalation recorded in `state.json`.
@@ -76,7 +71,7 @@ The folder is the current queueing mechanism. The `Status` field is the storage-
 6. If final-review remediation is requested for an existing requirement, the work item remains `Status: In Progress` in `board/in-progress/` while the driver routes remediation through `state.json`.
 7. Scope additions are not added to an in-progress work item. Create a separate work item instead.
 
-The driver is the only actor that changes lifecycle state after creation. work-item-writing creates `New` work items; downstream agents treat work-item content as read-only.
+The driver is the only actor that changes lifecycle state after creation. create-work-item creates `New` work items; downstream agents treat work-item content as read-only.
 
 ## Strict Markdown Template
 
