@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Work Item",
+  "description": "A structured representation of a work item",
+  "required": ["id", "type", "created", "status", "request", "description"],
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the work item"
+    },
+    "type": {
+      "type": "string",
+      "description": "Type of the work item",
+      "enum": ["user-story", "chore", "bug", "documentation"]
+    },
+    "created": {
+      "type": "string",
+      "format": "date",
+      "description": "Date work item was created"
+    },
+    "status": {
+      "type": "string",
+      "description": "Current status of the work item",
+      "enum": ["new", "in-progress", "done"]
+    },
+    "request": {
+      "type": "string",
+      "description": "Summary of the original request"
+    },
+    "source": {
+      "type": "string",
+       "description": "External work item URL, omit when not applicable"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the work item"
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "description": "Acceptance criteria for the work item (User Story/Chore only)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "description"]
+      }
+    },
+    "stepsToReproduce": {
+      "type": "string",
+      "description": "Steps to reproduce issue (Bug only)"
+    },
+    "expectedResult": {
+      "type": "string",
+      "description": "Expected result of operation (Bug only)"
+    },
+    "actualResult": {
+      "type": "string",
+      "description": "Actual result of operation (Bug only)"
+    },
+    "content": {
+      "type": "string",
+      "description": "Content to be included (Documentation only)"
+    }
+  }
+}

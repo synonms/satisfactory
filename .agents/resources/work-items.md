@@ -57,120 +57,51 @@ The work-item file has a `Status` field.
 | `Done` | Delivery has passed validation and received final human approval. |
 | `Blocked` | The workflow cannot proceed without human intervention. |
 
-The `Status` field is the storage-independent lifecycle value. Future adapters must expose the same lifecycle states without requiring folder movement.
+The `Status` field is the storage-independent lifecycle value. Future adapters must expose the same lifecycle states.
 
 ## State Management Process
 
-# TODO: GOT TO HERE
-
-1. `request-writer` creates approved work-item tickets with `Status: New` in `board/{request-id}/`.
-2. The pipeline driver starts the SDLC workflow for a selected `New` item. When `handoffs/{work-item-id}/state.json` is created, the driver moves the work item to `board/in-progress/` and updates `Status: In Progress`.
+1. `triage` agent creates approved work-item tickets with `Status: New` in `board/{request-id}/`.
+2. The orchestrator starts the SDLC workflow for a selected `New` item and creates `board/{request-id}/{work-item-id}/{work-item-id}.state.json` to track progress. The orchestrator updates `Status: In Progress`.
 3. Agents read the work item as an immutable requirement source. They do not change the work-item status or move the work-item record.
-4. If a failsafe trips or the workflow reaches a terminal blocker, the driver sets `Status: Blocked` and keeps the item in `board/in-progress/` with the escalation recorded in `state.json`.
-5. At the final human approval gate, the driver sets `Status: Done` and moves the work item to `board/done/`.
-6. If final-review remediation is requested for an existing requirement, the work item remains `Status: In Progress` in `board/in-progress/` while the driver routes remediation through `state.json`.
+4. If a failsafe trips or the workflow reaches a terminal blocker, the orchestrator sets `Status: Blocked` with the escalation recorded in `{work-item-id}.state.json`.
+5. At the final human approval gate, the orchestrator sets `Status: Done`.
+6. If final-review remediation is requested for an existing requirement, the work item remains `Status: In Progress` while the orchestrator routes remediation through `{work-item-id}.state.json`.
 7. Scope additions are not added to an in-progress work item. Create a separate work item instead.
 
-The driver is the only actor that changes lifecycle state after creation. create-work-item creates `New` work items; downstream agents treat work-item content as read-only.
+The orchestrator is the only actor that changes lifecycle state after creation. `/create-work-item` creates `New` work items; downstream agents treat work-item content as read-only.
 
-## Strict Markdown Template
+## Schema and Validation
 
-All Markdown work-item files must follow one of these structures exactly. Keep the top-level heading and metadata fields in the order shown. Use `Source` only when the original request came from an external system such as Azure DevOps.
+[The work item JSON Schema](../schemas/work-item.schema.json) is authoritative for required fields, types, nullability, allowed values, and additional-property rules. Install the development tools with `python -m pip install -r requirements-dev.txt`, then validate every existing control file before consuming it:
 
-### User Story
-
-```markdown
-# {work-item-id}: {Title}
-
-- **ID**: {work-item-id}
-- **Type**: User Story
-- **Created**: {ISO-8601 timestamp or local date/time with timezone}
-- **Status**: New
-- **Request**: {summary of the original request}
-- **Source**: {external work item URL, omit when not applicable}
-
-## Description
-
-As a {persona}, I want to {requirement}, so that {benefit}.
-
-## Acceptance Criteria
-
-- **{work-item-id}.1**: {independently verifiable criterion written from the user's perspective}
-- **{work-item-id}.2**: {independently verifiable criterion written from the user's perspective}
+```sh
+python -m check_jsonschema --schemafile .agents/schemas/work-item.schema.json board/{request-id}/{work-item-id}.work-item.json
 ```
 
-### Chore
+The following fields are mandatory for all work items:
 
-```markdown
-# {work-item-id}: {Title}
+- **id**: {work-item-id}
+- **type**: [user-story, chore, bug, documentation]
+- **created**: {ISO-8601 timestamp or local date/time with timezone}
+- **status**: [new, in-progress, done]
+- **request**: {summary of the original request}
 
-- **ID**: {work-item-id}
-- **Type**: Chore
-- **Created**: {ISO-8601 timestamp or local date/time with timezone}
-- **Status**: New
-- **Request**: {summary of the original request}
-- **Source**: {external work item URL, omit when not applicable}
+If the request originates from an Azure DevOps ticket then **source** must also be populated with the external work item URL.
 
-## Description
+The following fields are mandatory for `user story` and `chore` items:
 
-As a {persona}, I want to {requirement}, so that {benefit}.
+- **acceptanceCriteria**: {Array of independently verifiable criterion written from the user's perspective}
 
-## Acceptance Criteria
+The following fields are mandatory for `bug` items:
 
-- **{work-item-id}.1**: {independently verifiable criterion written from the user's perspective}
-- **{work-item-id}.2**: {independently verifiable criterion written from the user's perspective}
-```
+- **stepsToReproduce**: {Steps to reproduce issue}
+- **expectedResult**: {what should happen}
+- **actualResult**: {what actually happens}
 
-### Bug
+The following fields are mandatory for `documentation` items:
 
-```markdown
-# {work-item-id}: {Title}
-
-- **ID**: {work-item-id}
-- **Type**: Bug
-- **Created**: {ISO-8601 timestamp or local date/time with timezone}
-- **Status**: New
-- **Request**: {summary of the original request}
-- **Source**: {external work item URL, omit when not applicable}
-
-## Description
-
-{summary of the defect}
-
-## Steps to Reproduce
-
-1. {first step}
-2. {second step}
-
-## Expected Result
-
-{what should happen}
-
-## Actual Result
-
-{what actually happens}
-```
-
-### Documentation
-
-```markdown
-# {work-item-id}: {Title}
-
-- **ID**: {work-item-id}
-- **Type**: Documentation
-- **Created**: {ISO-8601 timestamp or local date/time with timezone}
-- **Status**: New
-- **Request**: {summary of the original request}
-- **Source**: {external work item URL, omit when not applicable}
-
-## Description
-
-{summary of the documentation task}
-
-## Content
-
-{the content requirements to create or update}
-```
+- **content**: {the content requirements to create or update}
 
 ## Authoring Rules
 
