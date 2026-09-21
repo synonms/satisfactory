@@ -16,6 +16,18 @@ Run from the repository root. Requires Python 3 and the development tools instal
 | --- | --- |
 | Validate a workflow state | `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json` |
 
+## Work Items
+
+Run from the repository root. Commands return compact JSON for agent consumption.
+
+| Purpose | Command |
+| --- | --- |
+| Create an approved request | `python -m tools.work_items create-request --input request.json` |
+| Retrieve a work item | `python -m tools.work_items get {work-item-id}` |
+| List work items | `python -m tools.work_items list` |
+| Change lifecycle status | `python -m tools.work_items change-status {work-item-id} {status}` |
+| Run work-item tests | `python -m pytest tests/work_items -q` |
+
 ## .NET
 
 Run from the repository root unless stated otherwise.

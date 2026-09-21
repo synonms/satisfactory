@@ -1,6 +1,6 @@
 # Specification: {Feature/Work Item Name}
 
-- **Work item**: {link or identifier for the related user story or chore located according to `.agents/resources/work-items.md`}
+- **Work item**: {stable identifier for the related user story or chore, retrievable with `python -m tools.work_items get {work-item-id}`}
 - **Status**: Draft
 - **Author**: software-architect
 - **Approval override used**: {None | Yes - reason}

@@ -1,6 +1,6 @@
 ---
 name: documentation-writer
-description: Use this agent when a documentation work item created by request-writer needs to be implemented, or when delivered documentation has been returned for remediation by implementation-validator. It writes and updates repository documentation against the work item's stated content requirements and hands off for validation.
+description: Use this agent when a documentation work item created by triage needs to be implemented, or when delivered documentation has been returned for remediation by implementation-validator. It writes and updates repository documentation against the work item's stated content requirements and hands off for validation.
 tools: [read, search, edit, execute, todo]
 color: cyan
 ---
@@ -33,7 +33,7 @@ I work on:
 
 ## Required Input
 
-1. The documentation work item located by ID using `.agents/resources/work-items.md`, including its **Description** and **Content** sections.
+1. The documentation work item returned by `python -m tools.work_items get {work-item-id}`, including its `description` and `content`. If retrieval fails, report the structured error and stop; never access work-item storage directly.
 2. Validate `handoffs/{work-item-id}/state.json` with `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json`; install the validator first with `python -m pip install -r requirements-dev.txt`. If validation fails, report the errors and stop without consuming the state.
 3. `handoffs/{work-item-id}/state.json` for the current iteration number and any prior validation findings.
 4. Any previous `handoffs/{work-item-id}/validationlog.{n}.md` when this is a remediation iteration.

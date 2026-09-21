@@ -1,6 +1,6 @@
 # SDLC Workflow
 
-The `sdlc` workflow is the orchestration contract for the AI Software Factory. It defines how a work item moves from intake to a delivered, validated change. Work-item structure, status values, and current board storage are defined in `.agents/resources/work-items.md`.
+The `sdlc` workflow is the orchestration contract for the AI Software Factory. It defines how a work item moves from intake to a delivered, validated change. Work-item semantics and operations are defined in `.agents/resources/work-items.md`; persistence is encapsulated by `python -m tools.work_items`.
 
 ## Core principle
 
@@ -15,11 +15,6 @@ This separation is what makes loop termination guaranteed rather than hoped for:
 ## Artifact layout
 
 ```
-board/
-  .id
-  new/{work-item-id}.{title}.{type}.md
-  in-progress/
-  done/
 handoffs/
   {work-item-id}/
     state.json
@@ -33,7 +28,7 @@ handoffs/
     validationlog.{n}.md
 ```
 
-`state.json` is the single source of truth for routing. Work-item records are the requirement payload. The current Markdown files are human-reviewable and git-diffable, but agents must not depend on Markdown paths as the durable storage contract.
+`state.json` is the single source of truth for routing. Work-item records are the requirement payload and are retrieved by stable ID through the work-item CLI. Agents must not depend on persistence paths or formats.
 
 Iteration numbers are scoped to the chunk, not to the work item. Two chunks may both be on `changelog.2.md` without collision.
 
@@ -98,7 +93,7 @@ Iteration numbers are scoped to the chunk, not to the work item. Two chunks may 
 
 - Only the driver mutates `state.json`. That includes `state`, `chunks[].state`, attempt counters, `budget`, `escalations`, and `history`.
 - Before any driver or agent consumes an existing `state.json`, validate it with `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json`. Install the validator first with `python -m pip install -r requirements-dev.txt`. On validation failure, do not consume or modify the file; report the validation errors and treat the work item as blocked pending correction.
-- Only the driver changes an existing work item's lifecycle state or board location after `request-writer` creates it. Follow `.agents/resources/work-items.md` for the `Status` field and current `board/` movement rules.
+- Only the driver changes an existing work item's lifecycle status after triage creates it. Use `python -m tools.work_items change-status`; never modify work-item persistence directly.
 - Agents write their numbered artifact and report an outcome. They propose; they do not route, and they do not touch `state.json`.
 - The driver applies the previous run's transition at the start of the next dispatch, by comparing `state.json` against the artifacts on disk. A missing expected artifact is a failed run under the monotonic artifact rule.
 - `state.json` must be **self-sufficient**. A fresh agent needs only its work item, its specification chunk, and the artifact paths named in state. It must never depend on conversation history.

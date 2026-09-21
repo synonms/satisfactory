@@ -1,6 +1,6 @@
 # Azure DevOps MCP Setup
 
-The `request-writer` agent optionally pulls its input from an Azure DevOps work item instead of a free-text prompt. This requires an MCP server that exposes a work item retrieval tool (e.g. `wit_get_work_item` from the `@azure-devops/mcp` package) to be connected in whichever IDE/harness is running the agent.
+The `triage` agent optionally pulls its input from an Azure DevOps work item instead of a free-text prompt. This requires an MCP server that exposes a work item retrieval tool (e.g. `wit_get_work_item` from the `@azure-devops/mcp` package) to be connected in whichever IDE/harness is running the agent.
 
 This setup is harness-specific - there is no single config file that works everywhere. Configure the server using the mechanism provided by your own tooling, using the examples below as a starting point.
 
@@ -46,4 +46,4 @@ Consult your harness's documentation for the exact config file name and location
 
 ## Authentication
 
-`@azure-devops/mcp` authenticates via Azure CLI credentials (`az login`) or an Entra ID token, depending on how it is invoked. If the request-writer agent reports it cannot reach Azure DevOps, verify the MCP server is connected and the user is signed in before retrying.
+`@azure-devops/mcp` authenticates via Azure CLI credentials (`az login`) or an Entra ID token, depending on how it is invoked. If the triage agent reports it cannot reach Azure DevOps, verify the MCP server is connected and the user is signed in before retrying.

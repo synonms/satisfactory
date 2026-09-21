@@ -1,10 +1,10 @@
 ## Step 1 — create the work items (once per request)
 
-Open a new chat, select the `request-writer` agent, and paste your request (free text, or an Azure DevOps work item id/URL). Answer its clarifying questions, approve the proposed breakdown, and it writes tickets to `board/new/` such as _00001-1.add-login-feature.user-story.md_.
+Open a new chat, select the `triage` agent, and paste your request (free text, or an Azure DevOps work item id/URL). Answer its clarifying questions and approve the proposed breakdown. It creates stable work-item IDs through the repository's work-item service.
 
 If the request is not carried out by the custom agent and instead the general agent tries to go ahead with implementation, try wrapping your prompt:
 
-_Create a work item ticket for the following request: "{REQUEST}". Do NOT carry out any implementation, just create the work item and the `board/new/` folder structure if required._
+_Create work items for the following request: "{REQUEST}". Do not carry out implementation. Use the create-work-item workflow and work-item CLI._
 
 ## Step 2 — advance one work item (repeat until terminal)
 
@@ -27,7 +27,7 @@ Every step gets its own session, which is what keeps the context window fresh. Y
 
 You are asked to intervene at exactly two points: approving the specification (`specification-draft → specification-approved`), and final verification at `ready-for-user`.
 
-On final approval, the work item is moved to `done/`. If there are issues with the implementation, the practical wording for a valid remediation request is:
+On final approval, the work-item status changes to `done`. If there are issues with the implementation, the practical wording for a valid remediation request is:
 
 ```
 Request remediation: [requirement text or acceptance-criterion identifier] is not met.

@@ -43,7 +43,7 @@ Before making changes, locate and read:
 1. Validate `handoffs/{work-item-id}/state.json` with `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json`; install the validator first with `python -m pip install -r requirements-dev.txt`. If validation fails, report the errors and stop without consuming the state.
 2. `handoffs/{work-item-id}/state.json` to confirm my chunk, technology, and iteration number.
 2. For a user story or chore: the approved technical specification `handoffs/{work-item-id}/specification.md`, and specifically my assigned chunk within it.
-3. For a bug: the work item located by ID using `.agents/resources/work-items.md`, and the failing reproduction test recorded in `handoffs/{work-item-id}/chunks/{chunk-id}/testlog.1.md`. No specification exists for a bug; the failing test is my requirement source.
+3. For a bug: run `python -m tools.work_items get {work-item-id}` to retrieve the work item, then read the failing reproduction test recorded in `handoffs/{work-item-id}/chunks/{chunk-id}/testlog.1.md`. Never access work-item storage directly. No specification exists for a bug; the failing test is my requirement source.
 4. On a remediation iteration, the latest `testlog.{n}.md` for my chunk, the integration testlog, or the latest `validationlog.{n}.md`, whichever returned the work to me. Its findings are my primary checklist.
 5. The relevant solution, project, source, and configuration files.
 6. Applicable repository instructions, coding rules, technology rules, architecture resources, skills, and `.agents/resources/developer-commands.md`.

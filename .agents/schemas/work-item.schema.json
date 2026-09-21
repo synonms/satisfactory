@@ -2,11 +2,13 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Work Item",
   "description": "A structured representation of a work item",
-  "required": ["id", "type", "created", "status", "request", "description"],
   "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "created", "status", "request", "description"],
   "properties": {
     "id": {
       "type": "string",
+      "pattern": "^[0-9]{5}-[1-9][0-9]*$",
       "description": "Unique identifier for the work item"
     },
     "type": {
@@ -22,18 +24,21 @@
     "status": {
       "type": "string",
       "description": "Current status of the work item",
-      "enum": ["new", "in-progress", "done"]
+      "enum": ["new", "in-progress", "done", "blocked"]
     },
     "request": {
       "type": "string",
+      "minLength": 1,
       "description": "Summary of the original request"
     },
     "source": {
       "type": "string",
-       "description": "External work item URL, omit when not applicable"
+      "format": "uri",
+      "description": "External work item URL, omit when not applicable"
     },
     "description": {
       "type": "string",
+      "minLength": 1,
       "description": "Detailed description of the work item"
     },
     "acceptanceCriteria": {
@@ -41,32 +46,91 @@
       "description": "Acceptance criteria for the work item (User Story/Chore only)",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^[0-9]{5}-[1-9][0-9]*\\.[1-9][0-9]*$"
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           }
         },
         "required": ["id", "description"]
-      }
+      },
+      "minItems": 1
     },
     "stepsToReproduce": {
       "type": "string",
+      "minLength": 1,
       "description": "Steps to reproduce issue (Bug only)"
     },
     "expectedResult": {
       "type": "string",
+      "minLength": 1,
       "description": "Expected result of operation (Bug only)"
     },
     "actualResult": {
       "type": "string",
+      "minLength": 1,
       "description": "Actual result of operation (Bug only)"
     },
     "content": {
       "type": "string",
+      "minLength": 1,
       "description": "Content to be included (Documentation only)"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "type": { "enum": ["user-story", "chore"] } },
+        "required": ["type"]
+      },
+      "then": {
+        "required": ["acceptanceCriteria"],
+        "not": {
+          "anyOf": [
+            { "required": ["stepsToReproduce"] },
+            { "required": ["expectedResult"] },
+            { "required": ["actualResult"] },
+            { "required": ["content"] }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "bug" } },
+        "required": ["type"]
+      },
+      "then": {
+        "required": ["stepsToReproduce", "expectedResult", "actualResult"],
+        "not": {
+          "anyOf": [
+            { "required": ["acceptanceCriteria"] },
+            { "required": ["content"] }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "documentation" } },
+        "required": ["type"]
+      },
+      "then": {
+        "required": ["content"],
+        "not": {
+          "anyOf": [
+            { "required": ["acceptanceCriteria"] },
+            { "required": ["stepsToReproduce"] },
+            { "required": ["expectedResult"] },
+            { "required": ["actualResult"] }
+          ]
+        }
+      }
+    }
+  ]
 }

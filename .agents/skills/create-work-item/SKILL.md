@@ -5,7 +5,7 @@ description: Use when turning a free-text request or Azure DevOps work item into
 
 # Work Item Writing
 
-Use this workflow when the triage agent receives an initial request. The work-item contract in `.agents/resources/work-items.md` is authoritative for identities, types, fields, templates, storage, and lifecycle values. Do not copy those definitions into this skill or invent a second contract.
+Use this workflow when the triage agent receives an initial request. The semantic and operation contract in `.agents/resources/work-items.md` is authoritative. Work-item persistence is owned by `python -m tools.work_items`; never inspect or modify its storage directly.
 
 ## 1. Normalize the request
 
@@ -38,23 +38,21 @@ Present the proposed breakdown and wait for explicit user approval or requested 
 
 After approval:
 
-1. Read `.agents/resources/work-items.md` again if needed and follow its current adapter rules.
-2. Allocate the next sequential request ID and update the adapter's ID store.
-3. Assign work-item sequence numbers starting at `1` for that request.
-4. Ensure the required board directories exist.
-5. Write one file per work item under `board/{request-id}/{work-item-id}/` using the exact template and filename rules from `work-items.md`.
-6. Set every new item to `Status: New`.
-7. Include `Source` only when the request came from an external system, using the retrieved Azure DevOps HTML URL.
-8. Make acceptance criteria independently testable and preserve stable IDs.
+1. Build a JSON array containing one object per approved work item in proposal order.
+2. Include `type`, `request`, and `description` on every object, plus `source` only when the request came from an external system.
+3. For a user story or chore, include `acceptanceCriteria` as an array of independently testable description strings. For a bug, include `stepsToReproduce`, `expectedResult`, and `actualResult`. For documentation, include `content`.
+4. Do not provide IDs, criterion IDs, creation dates, or statuses; the service owns those fields.
+5. Write the input to a temporary JSON file, call `python -m tools.work_items create-request --input {temporary-file}`, and remove the temporary file after the command finishes.
+6. Treat a nonzero exit code as a blocker. Report the structured error and do not create records manually.
 
 Do not modify existing work items, move items between lifecycle folders, or create any other files. Those are orchestrator responsibilities.
 
 ## 5. Report the result
 
-Report each created file path, work-item ID, type, and title. State that the items are ready to enter the SDLC workflow. For any user story or chore work items, tell the user to run
+Report each created work-item ID, type, and request summary from the command result. State that the items are ready to enter the SDLC workflow. For any user story or chore work items, tell the user to run
 `.agents/prompts/design.prompt.md` against the selected work-item ID in a new chat session with a fresh context window.
 
-If creation is blocked, report the exact missing input or failed operation and leave already-created records untouched. Do not claim that an item is ready if its file, required fields, or `Status: New` value could not be verified.
+If creation is blocked, report the exact missing input or failed operation and leave already-created records untouched. Do not claim that an item is ready unless the command returned its required fields and `new` status.
 
 ## Completion checklist
 
@@ -63,5 +61,5 @@ If creation is blocked, report the exact missing input or failed operation and l
 - [ ] Every change is represented by one independently deliverable work item.
 - [ ] Every item has exactly one valid type.
 - [ ] User approval was explicit before file creation.
-- [ ] IDs, templates, filenames, storage, and status follow `work-items.md`.
-- [ ] The final report presents links to all newly created work item files.
+- [ ] The creation command succeeded and returned every approved work item.
+- [ ] The final report presents every created work-item ID.

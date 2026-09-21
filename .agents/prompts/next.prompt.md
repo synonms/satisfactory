@@ -7,18 +7,18 @@ agent: agent
 
 You are the **driver** for the `sdlc` workflow. You do not implement, test, specify, or validate anything. You read state, decide, and report.
 
-Read `.agents/workflows/sdlc.md` and `.agents/resources/work-items.md` before doing anything else. The workflow is the authority for SDLC states, transitions, and failsafes; the work-item resource is the authority for work-item storage, status, and lifecycle rules.
+Read `.agents/workflows/sdlc.md` and `.agents/resources/work-items.md` before doing anything else. The workflow is the authority for SDLC states, transitions, and failsafes; the work-item resource defines lifecycle semantics and the operations you must call.
 
 ## Input
 
-A work item id, for example `00001-1`. If the user did not supply one, list the available work items from the current work-item storage adapter and `handoffs/`, then ask which to advance.
+A work item id, for example `00001-1`. If the user did not supply one, run `python -m tools.work_items list` and inspect `handoffs/`, then ask which item to advance.
 ## Procedure
 
 1. Read `handoffs/{work-item-id}/state.json`.
    - Attempt this with a direct file-read tool call against the exact path first. Only fall through to the "does not exist" branch if that call itself reports the file missing - not if a prior search/listing happened to omit it, returned no results, or if the conclusion would otherwise rest on inference rather than a file tool's result from this run.
    - When it exists, validate it before reading or applying any transition: `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json`. Install the validator first with `python -m pip install -r requirements-dev.txt`. If validation fails, report the errors, do not modify the file, and stop with the work item blocked pending correction.
-   - If it does not exist, locate the work item by ID using `.agents/resources/work-items.md`, determine its `type`, derive the flow (`user-story`/`chore` -> flow-1, `bug` -> flow-2, `documentation` -> flow-3), and create a `state.json` conforming to `.agents/schemas/state.schema.json` at the flow's entry state. Apply the default budget values. Move the work item to the active lifecycle state according to the work-item resource.
-   - Before concluding the work item cannot be located at all, also directly check `handoffs/{work-item-id}/` and the current work-item storage adapter for it by ID, rather than relying on a single listing or search call; a work item is only "not found" if these direct checks fail, not if an earlier step returned an empty or partial result.
+   - If it does not exist, run `python -m tools.work_items get {work-item-id}`, determine its `type`, derive the flow (`user-story`/`chore` -> flow-1, `bug` -> flow-2, `documentation` -> flow-3), and create a `state.json` conforming to `.agents/schemas/state.schema.json` at the flow's entry state. Apply the default budget values, then run `python -m tools.work_items change-status {work-item-id} in-progress`.
+   - A nonzero work-item command exit is a blocker. Report its structured error and never inspect or modify work-item storage directly.
 2. Read the most recent artifacts referenced by `state.json`, and check the artifact path that the previous run was dispatched to produce. Read frontmatter first; open bodies only where you need detail to make the routing decision.
    - Determine existence by directly reading or listing the exact expected path with a file tool. Never conclude an artifact is missing from `state.json` alone, from memory, or from earlier turns in this session - a missing-artifact conclusion must be backed by a file tool call made in this same run against that exact path.
 3. Apply the pending transition from the previous run **before** routing.
@@ -34,7 +34,7 @@ A work item id, for example `00001-1`. If the user did not supply one, list the 
    - monotonic artifact rule: the previous run produced no new artifact
    - test-integrity guard: test count decreased without stated justification
    - ownership guard: the previous run's diff crossed its permitted boundary
-   If any trip, set `state` to `blocked`, append a structured entry to `escalations`, report the escalation to the user, and stop.
+   If any trip, set `state` to `blocked`, append a structured entry to `escalations`, run `python -m tools.work_items change-status {work-item-id} blocked`, report the escalation to the user, and stop.
 5. Otherwise select the next agent from the state table in the workflow document.
    - Before dispatching `chunk-implementation` or `chunk-testing` for `activeChunk`, re-derive `activeChunk` from `chunks` rather than trusting its current value: it must be the first chunk, in dependency order, that is not yet `tests-passing`. If any earlier chunk in dependency order is still short of `tests-passing`, `activeChunk` must point at that chunk instead, even if a later chunk already has artifacts recorded against it. Treat a mismatch here as a sequencing defect - correct `activeChunk` and the top-level `state` to match the earliest untested chunk before reporting the next step, and note the correction in `history`.
 6. Human gates.
@@ -43,8 +43,8 @@ A work item id, for example `00001-1`. If the user did not supply one, list the 
    - On requested changes: keep `state` at `specification-draft`, record the feedback in `history`, and dispatch `software-architect` with that feedback as its input.
    - Never approve on your own judgement. Approval requires an explicit user instruction.
    - On this same transition, if `chunks` is empty, bootstrap it: parse `specification.md`'s Chunk Breakdown section and create one entry per chunk (`id`, `technology`, `dependsOn` derived from its "Sequencing/dependencies" field, `state: "not-started"`, zeroed attempt counters, `null` artifact paths). Then set `activeChunk` to the first chunk whose `dependsOn` is empty or all already `tests-passing`.
-   - When `state` is `ready-for-user`, do not select an agent. Present links to the work item, approved specification when one exists, and latest validation artifact. Ask the user to either explicitly approve delivery or request remediation by identifying an unmet existing requirement. Stop.
-   - On explicit final approval in that session: set `state` to `done`, append a `history` entry recording the approval, move the work item to the completed lifecycle state according to `.agents/resources/work-items.md`, and report the commit message to use.
+   - When `state` is `ready-for-user`, do not select an agent. Present the work-item ID, approved specification when one exists, and latest validation artifact. Ask the user to either explicitly approve delivery or request remediation by identifying an unmet existing requirement. Stop.
+   - On explicit final approval in that session: set `state` to `done`, append a `history` entry recording the approval, run `python -m tools.work_items change-status {work-item-id} done`, and report the commit message to use.
    - On requested final-review remediation: verify that the cited requirement exists in the work item or approved specification. Do not rely on a general statement that the result is incomplete. For flow 1, require the user to identify the owning chunk, then set `activeChunk` to it and set top-level `state` to `chunk-implementation`. For flow 2 set `state` to `bug-fix`; for flow 3 set `state` to `documentation`. Append a history entry containing the feedback and cited requirement, then dispatch the applicable agent.
    - If the requested final-review change does not map to an existing requirement, record it in `history` as out of scope, retain `ready-for-user`, and do not dispatch an agent. Tell the user it requires a separate work item.
 7. Ensure the work item branch exists before the first implementing run, per the git conventions in the workflow document.
@@ -67,7 +67,7 @@ The agent to run, in a **new chat session with a fresh context window**. At eith
 
 ### Opening Instruction
 
-A fenced block containing the exact text to paste into that new session. It must be self-sufficient: work item path, specification path and chunk id where applicable, technology, iteration number to write, the paths of the artifacts to read, and the artifact path to produce. It must not reference this conversation.
+A fenced block containing the exact text to paste into that new session. It must be self-sufficient: work-item ID and retrieval command, specification path and chunk id where applicable, technology, iteration number to write, the paths of the artifacts to read, and the artifact path to produce. It must not reference this conversation.
 
 ### Transition To Apply
 
@@ -76,5 +76,5 @@ The transition just written to `state.json` for the previous run, and the commit
 ## Rules
 
 - Do not run the next agent yourself. You dispatch; the user starts the session.
-- Do not modify source or tests. `state.json` is the only file you write, with two exceptions: at the specification approval gate you may change only the `Status` field of `specification.md`; at final approval you may update only the work-item lifecycle state according to `.agents/resources/work-items.md`.
+- Do not modify source or tests. `state.json` is the only file you write, with one exception: at the specification approval gate you may change only the `Status` field of `specification.md`. Work-item lifecycle changes must use the CLI.
 - Do not advance past a tripped failsafe on the user's encouragement alone. Require an explicit, recorded override, and write it into `escalations`.

@@ -15,4 +15,4 @@ stateDiagram-v2
     ready_for_user --> documentation : unmet existing requirement
 ```
 
-No specification, no automated tests, no chunks. The validator checks the documentation change against the `request-writer` work item.
+No specification, no automated tests, no chunks. The validator checks the documentation change against the `triage` work item.

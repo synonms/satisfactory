@@ -1,6 +1,6 @@
 # Work Items
 
-This document defines the work-item contract for the AI Software Factory. Agents must depend on the concepts and fields in this resource, not on the current storage implementation.
+This document defines the work-item semantics and agent-facing operations for the AI Software Factory. Agents must use `python -m tools.work_items`; persistence is an implementation detail and must never be read or modified directly.
 
 ## Purpose
 
@@ -24,89 +24,61 @@ Each work item has exactly one type:
 ## Identity
 
 - Request IDs are sequential five-digit numbers starting at `00001`.
-- The latest request ID is stored in `board/.id` while the Markdown-board adapter is in use.
 - Work-item IDs use `{request-id}-{work-item-sequence}`, where `work-item-sequence` starts at `1` for each request, for example `00001-1`.
 - Acceptance criteria on user stories and chores use `{work-item-id}.{criterion-sequence}`, for example `00001-1.1`.
-- IDs must be stable across storage migrations. Do not derive identity from a filename once the work item has been created.
-
-## Current Storage Adapter
-
-The current implementation stores each work item as one Markdown file under `board/{request-id}/`:
-
-```text
-board/
-  .id
-  {request-id}/
-    {work-item-id}.work-item.md
-```
-
-When creating work items, ensure `board/` and `board/{request-id}/` exist. If they do not then create them. Save new work items to `board/{request-id}/`.
-
-Work item filenames use `{work-item-id}.work-item.md`, for example: `00001-1.work-item.md`.
-
-Agents must locate a work item by ID, not by reconstructing its title. With the current adapter, search the board state folders for `board/{request-id}/{work-item-id}.work-item.md`.
+- The service assigns IDs, creation dates, and initial statuses. Callers must not supply them.
+- IDs remain stable across storage migrations.
 
 ## Status Model
 
-The work-item file has a `Status` field. 
+Each work item has one lifecycle status.
 
 | Status field | Meaning |
 | --- | --- |
-| `New` | The work item has been accepted into the backlog and is ready for SDLC dispatch. |
-| `In Progress` | The SDLC workflow has started and handoff state exists or is being created. |
-| `Done` | Delivery has passed validation and received final human approval. |
-| `Blocked` | The workflow cannot proceed without human intervention. |
+| `new` | The work item has been accepted into the backlog and is ready for SDLC dispatch. |
+| `in-progress` | The SDLC workflow has started and handoff state exists or is being created. |
+| `done` | Delivery has passed validation and received final human approval. |
+| `blocked` | The workflow cannot proceed without human intervention. |
 
 The `Status` field is the storage-independent lifecycle value. Future adapters must expose the same lifecycle states.
 
 ## State Management Process
 
-1. `triage` agent creates approved work-item tickets with `Status: New` in `board/{request-id}/`.
-2. The orchestrator starts the SDLC workflow for a selected `New` item and creates `board/{request-id}/{work-item-id}/{work-item-id}.state.json` to track progress. The orchestrator updates `Status: In Progress`.
-3. Agents read the work item as an immutable requirement source. They do not change the work-item status or move the work-item record.
-4. If a failsafe trips or the workflow reaches a terminal blocker, the orchestrator sets `Status: Blocked` with the escalation recorded in `{work-item-id}.state.json`.
-5. At the final human approval gate, the orchestrator sets `Status: Done`.
-6. If final-review remediation is requested for an existing requirement, the work item remains `Status: In Progress` while the orchestrator routes remediation through `{work-item-id}.state.json`.
+1. The `triage` agent creates approved work items with status `new` through `create-request`.
+2. The dispatcher starts the SDLC workflow and changes the status to `in-progress` through `change-status`.
+3. Agents retrieve the work item through `get` and treat it as an immutable requirement source.
+4. If a failsafe trips, the dispatcher changes the status to `blocked` and records the escalation in `state.json`.
+5. At final human approval, the dispatcher changes the status to `done`.
+6. During final-review remediation, the work item remains `in-progress`.
 7. Scope additions are not added to an in-progress work item. Create a separate work item instead.
 
-The orchestrator is the only actor that changes lifecycle state after creation. `/create-work-item` creates `New` work items; downstream agents treat work-item content as read-only.
+The only allowed transitions are `new -> in-progress`, `in-progress -> done`, and `in-progress -> blocked`. Repeating the current status is idempotent. The dispatcher is the only actor that changes lifecycle status after creation.
 
-## Schema and Validation
+## Operations
 
-[The work item JSON Schema](../schemas/work-item.schema.json) is authoritative for required fields, types, nullability, allowed values, and additional-property rules. Install the development tools with `python -m pip install -r requirements-dev.txt`, then validate every existing control file before consuming it:
+Commands emit a JSON success envelope to stdout. Failures emit a structured JSON error to stderr and return nonzero. A failed command is a blocker; never bypass it with direct storage access.
 
-```sh
-python -m check_jsonschema --schemafile .agents/schemas/work-item.schema.json board/{request-id}/{work-item-id}.work-item.json
+Install the repository tooling once with `python -m pip install -r requirements-dev.txt` before calling these operations.
+
+```powershell
+python -m tools.work_items create-request --input request.json
+python -m tools.work_items get 00001-1
+python -m tools.work_items list --status new --type user-story --request-id 00001
+python -m tools.work_items change-status 00001-1 in-progress
 ```
 
-The following fields are mandatory for all work items:
+Creation input is a JSON array in proposal order. Every item requires `type`, `request`, and `description`; `source` is optional. Do not provide `id`, `created`, or `status`.
 
-- **id**: {work-item-id}
-- **type**: [user-story, chore, bug, documentation]
-- **created**: {ISO-8601 timestamp or local date/time with timezone}
-- **status**: [new, in-progress, done]
-- **request**: {summary of the original request}
+- User stories and chores require `acceptanceCriteria`, an array of independently verifiable description strings.
+- Bugs require `stepsToReproduce`, `expectedResult`, and `actualResult`.
+- Documentation items require `content` describing what must be produced or updated.
 
-If the request originates from an Azure DevOps ticket then **source** must also be populated with the external work item URL.
-
-The following fields are mandatory for `user story` and `chore` items:
-
-- **acceptanceCriteria**: {Array of independently verifiable criterion written from the user's perspective}
-
-The following fields are mandatory for `bug` items:
-
-- **stepsToReproduce**: {Steps to reproduce issue}
-- **expectedResult**: {what should happen}
-- **actualResult**: {what actually happens}
-
-The following fields are mandatory for `documentation` items:
-
-- **content**: {the content requirements to create or update}
+Triage may call `create-request`, `get`, and `list`. The dispatcher may call `get`, `list`, and `change-status`. Other agents may call `get` only.
 
 ## Authoring Rules
 
 - Write from the user's perspective and keep each work item independently understandable.
 - Split a request into as many independently deliverable work items as needed.
 - Acceptance criteria must be testable without relying on conversation history.
-- Do not mix multiple work-item types in one file.
+- Each work item has exactly one type.
 - Do not change existing acceptance criteria or scope after SDLC work begins; create a new work item for new scope.

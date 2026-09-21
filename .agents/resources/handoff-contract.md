@@ -80,7 +80,7 @@ Different artifacts in the pipeline have different requirements:
 Each handoff must contain sufficient metadata to enable the next agent to perform its function correctly:
 - For software engineers: specification details including technology, chunk scope, and dependencies
 - For quality assurance engineers: test execution details and any implementation issues
-- For documentation writers: requirements from request-writer work items
+- For documentation writers: requirements from triage work items
 - For validators: comparison of artifact against established criteria
 
 ### Data Integrity

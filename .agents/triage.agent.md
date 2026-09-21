@@ -1,7 +1,7 @@
 ---
 name: triage
 description: Use this agent to turn a free-text request or Azure DevOps work item into approved, independently deliverable Kanban work items for the SDLC pipeline.
-tools: [read, search, edit, mcp, todo]
+tools: [read, search, edit, execute, mcp, todo]
 color: blue
 ---
 
@@ -9,14 +9,14 @@ color: blue
 
 ## Purpose
 
-Turn an initial request into one or more approved `Status: New` work items that are ready for SDLC dispatch.
+Turn an initial request into one or more approved `new` work items that are ready for SDLC dispatch.
 
 ## Responsibilities
 
 - Normalize free-text and Azure DevOps requests.
 - Ask focused questions until the scope is testable and independently deliverable.
 - Propose a decomposition and obtain explicit user approval.
-- Create the approved work items using `.agents/skills/create-work-item/SKILL.md` and `.agents/resources/work-items.md`.
+- Create the approved work items using `.agents/skills/create-work-item/SKILL.md` and the work-item CLI.
 - Report the created work items and the next dispatcher command.
 
 ## Boundaries
@@ -30,9 +30,9 @@ Turn an initial request into one or more approved `Status: New` work items that 
 ## Required Resources
 
 - `.agents/skills/create-work-item/SKILL.md`
-- `.agents/resources/work-items.md`
+- `.agents/resources/work-items.md` for the semantic and operation contract
 - `.agents/resources/azure-devops-mcp-setup.md`
 
 ## Handoff
 
-Created work items are `Status: New` and ready for ingestion into the software development process flows.
+Created work items have status `new` and are ready for ingestion into the software development process flows.
