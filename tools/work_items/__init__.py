@@ -9,6 +9,10 @@ from .models import (
 	WorkItemStorageError,
 	WorkItemType,
 	WorkItemValidationError,
+	SpecificationStatus,
+	SpecificationValidationError,
+	SpecificationNotFoundError,
+	SpecificationConflictError
 )
 from .service import WorkItemService
 
@@ -22,4 +26,8 @@ __all__ = [
 	"WorkItemType",
 	"WorkItemValidationError",
 	"create_service",
+	"SpecificationStatus",
+	"SpecificationValidationError",
+	"SpecificationNotFoundError",
+	"SpecificationConflictError"
 ]

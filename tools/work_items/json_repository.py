@@ -19,19 +19,24 @@ from .models import (
     WorkItemNotFoundError,
     WorkItemStorageError,
     WorkItemValidationError,
+    Specification,
+    SpecificationConflictError,
+    SpecificationNotFoundError,
+    SpecificationValidationError
 )
 from .repository import RequestFactory
-from .validation import WorkItemValidator
+from .validation import WorkItemValidator, SpecificationValidator
 
 WORK_ITEM_ID = re.compile(r"^(?P<request>[0-9]{5})-[1-9][0-9]*$")
 
 
 class JsonFileWorkItemRepository:
-    def __init__(self, board_root: Path, validator: WorkItemValidator | None = None) -> None:
+    def __init__(self, board_root: Path, work_item_validator: WorkItemValidator | None = None, specification_validator: SpecificationValidator | None = None) -> None:
         self._board_root = board_root
-        self._validator = validator or WorkItemValidator()
+        self._work_item_validator = work_item_validator or WorkItemValidator()
+        self._specification_validator = specification_validator or SpecificationValidator()
 
-    def create_request(self, factory: RequestFactory) -> list[WorkItem]:
+    def create(self, factory: RequestFactory) -> list[WorkItem]:
         self._board_root.mkdir(parents=True, exist_ok=True)
         with self._lock():
             request_id = f"{self._next_request_number():05d}"
@@ -43,7 +48,7 @@ class JsonFileWorkItemRepository:
             if not records:
                 raise WorkItemValidationError("A request must contain at least one work item")
             for record in records:
-                self._validator.validate(record)
+                self._work_item_validator.validate(record)
 
             request_directory.mkdir()
             try:
@@ -67,9 +72,7 @@ class JsonFileWorkItemRepository:
         records = [self._read(path) for path in self._board_root.glob("[0-9]????/*.work-item.json")]
         return sorted(records, key=lambda record: _id_parts(record["id"]))
 
-    def update_status(
-        self, work_item_id: str, expected_status: str, status: str
-    ) -> WorkItem:
+    def update_status(self, work_item_id: str, expected_status: str, status: str) -> WorkItem:
         self._board_root.mkdir(parents=True, exist_ok=True)
         with self._lock():
             record = self.get(work_item_id)
@@ -79,9 +82,87 @@ class JsonFileWorkItemRepository:
                     f"to {record['status']}"
                 )
             record["status"] = status
-            self._validator.validate(record)
+            self._work_item_validator.validate(record)
             self._write_atomic(self._path_for(work_item_id), record)
             return record
+
+    def add_spec(self, work_item_id: str, specification: Specification) -> Specification:
+        if not specification:
+            raise SpecificationValidationError("'add_spec' requests must supply a specification")
+        with self._lock():
+            work_item = self.get(work_item_id)
+            if "specification" not in work_item:
+                raise SpecificationValidationError(
+                    f"Work item {work_item_id} does not support specifications"
+                )
+            if work_item["specification"]:
+                raise WorkItemConflictError(f"Work item {work_item_id} already has a specification")
+
+            self._specification_validator.validate(specification)
+            if specification["status"] != "draft":
+                raise SpecificationValidationError("New specifications must have status 'draft'")
+
+            work_item["specification"] = specification
+            self._write_atomic(self._path_for(work_item_id), work_item)
+            return specification
+
+    def revise_spec(self, work_item_id: str, specification: Specification) -> Specification:
+        if not specification:
+            raise SpecificationValidationError("'revise_spec' requests must supply a specification")
+        with self._lock():
+            work_item = self.get(work_item_id)
+            if "specification" not in work_item:
+                raise SpecificationValidationError(
+                    f"Work item {work_item_id} does not support specifications"
+                )
+            if not work_item["specification"]:
+                raise WorkItemConflictError(f"Work item {work_item_id} does not have a specification to revise")
+            if work_item["specification"]["status"] == "approved":
+                raise WorkItemConflictError(f"Work item {work_item_id} already has an approved specification")
+
+            self._specification_validator.validate(specification)
+            if specification["status"] != "draft":
+                raise SpecificationValidationError("Revised specifications must have status 'draft'")
+
+            work_item["specification"] = specification
+            self._write_atomic(self._path_for(work_item_id), work_item)
+            return specification
+
+    def get_spec(self, work_item_id: str) -> Specification:
+        work_item = self.get(work_item_id)
+        if "specification" not in work_item:
+            raise SpecificationValidationError(
+                f"Work item {work_item_id} does not support specifications"
+            )
+        specification = work_item["specification"]
+
+        if not specification:
+            raise SpecificationNotFoundError(f"No specification found for work item {work_item_id}")
+
+        self._specification_validator.validate(specification)
+
+        return specification
+
+    def approve_spec(self, work_item_id: str) -> Specification:
+        with self._lock():
+            work_item = self.get(work_item_id)
+            if "specification" not in work_item:
+                raise SpecificationValidationError(
+                    f"Work item {work_item_id} does not support specifications"
+                )
+            specification = work_item["specification"]
+            if not specification:
+                raise SpecificationNotFoundError(f"No specification found for work item {work_item_id}")
+            if specification["status"] != "draft":
+                raise SpecificationConflictError(
+                    f"Specification for work item {work_item_id} status is not draft"
+                )
+
+            specification["status"] = "approved"
+            self._specification_validator.validate(specification)
+            self._write_atomic(self._path_for(work_item_id), work_item)
+            return specification
+
 
     def _next_request_number(self) -> int:
         stored = 0
@@ -113,7 +194,7 @@ class JsonFileWorkItemRepository:
             raise WorkItemStorageError(f"Cannot read {path}: {error}") from error
         if not isinstance(value, dict):
             raise WorkItemValidationError(f"Work item in {path} must be a JSON object")
-        self._validator.validate(value)
+        self._work_item_validator.validate(value)
         return value
 
     def _write_atomic(self, path: Path, value: WorkItem) -> None:

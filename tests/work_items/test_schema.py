@@ -23,6 +23,7 @@ def work_item(item_type: str) -> dict:
         item["acceptanceCriteria"] = [
             {"id": "00001-1.1", "description": "The operation is testable."}
         ]
+        item["specification"] = None
     elif item_type == "bug":
         item.update(
             stepsToReproduce="Run the failing operation.",

@@ -4,7 +4,7 @@
   "description": "A structured representation of a feature specification for a user story or chore work item",
   "type": "object",
   "additionalProperties": false,
-  "required": ["workItemId", "created", "status", "summary", "acceptanceCriteria", "architecturalSummary", "tasks"],
+  "required": ["workItemId", "created", "status", "summary", "architecturalSummary", "tasks"],
   "properties": {
     "workItemId": {
       "type": "string",
@@ -25,26 +25,6 @@
       "type": "string",
       "minLength": 1,
       "description": "Brief description of the feature/chore and the problem it solves"
-    },
-    "acceptanceCriteria": {
-      "type": "array",
-      "description": "Acceptance criteria from the work item",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^[0-9]{5}-[1-9][0-9]*\\.[1-9][0-9]*$"
-          },
-          "description": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": ["id", "description"]
-      },
-      "minItems": 1
     },
     "architecturalSummary": {
       "type": "string",

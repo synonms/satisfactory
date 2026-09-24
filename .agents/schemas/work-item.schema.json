@@ -80,6 +80,17 @@
       "type": "string",
       "minLength": 1,
       "description": "Content to be included (Documentation only)"
+    },
+    "specification": {
+      "description": "Implementation specification for user-story/chore work items",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "specification.schema.json"
+        }
+      ]
     }
   },
   "allOf": [
@@ -89,7 +100,7 @@
         "required": ["type"]
       },
       "then": {
-        "required": ["acceptanceCriteria"],
+        "required": ["acceptanceCriteria", "specification"],
         "not": {
           "anyOf": [
             { "required": ["stepsToReproduce"] },
@@ -110,7 +121,8 @@
         "not": {
           "anyOf": [
             { "required": ["acceptanceCriteria"] },
-            { "required": ["content"] }
+            { "required": ["content"] },
+            { "required": ["specification"] }
           ]
         }
       }
@@ -127,7 +139,8 @@
             { "required": ["acceptanceCriteria"] },
             { "required": ["stepsToReproduce"] },
             { "required": ["expectedResult"] },
-            { "required": ["actualResult"] }
+            { "required": ["actualResult"] },
+            { "required": ["specification"] }
           ]
         }
       }

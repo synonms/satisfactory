@@ -4,7 +4,12 @@ from pathlib import Path
 import pytest
 
 from tools.work_items.json_repository import JsonFileWorkItemRepository
-from tools.work_items.models import WorkItemConflictError, WorkItemStatus, WorkItemValidationError
+from tools.work_items.models import (
+    SpecificationValidationError,
+    WorkItemConflictError,
+    WorkItemStatus,
+    WorkItemValidationError,
+)
 from tools.work_items.service import WorkItemService
 
 
@@ -21,6 +26,28 @@ def story(request: str = "Add coded work-item management") -> dict:
         "request": request,
         "description": "Agents manage work items through stable operations.",
         "acceptanceCriteria": ["An agent can create a request.", "An agent can read an item."],
+    }
+
+
+def specification() -> dict:
+    return {
+        "summary": "Implementation plan",
+        "architecturalSummary": "Use the existing service structure.",
+        "keyDesignDecisions": [],
+        "apiContracts": [],
+        "databaseSchema": [],
+        "uiComponents": [],
+        "testingRequirements": [],
+        "tasks": [
+            {
+                "id": "python-work-items",
+                "owner": "software-engineer",
+                "scope": "Implement the specification commands.",
+                "acceptanceCriteriaCovered": ["00001-1.1"],
+            }
+        ],
+        "crossTaskIntegrationPoints": [],
+        "openQuestionsAndRisks": [],
     }
 
 
@@ -86,3 +113,36 @@ def test_creation_rejects_identity_and_invalid_type_fields(tmp_path: Path) -> No
         manager.create_request([{**story(), "id": "99999-1"}])
     with pytest.raises(WorkItemValidationError):
         manager.create_request([{**story(), "content": "Wrong field."}])
+
+
+def test_specification_lifecycle_for_user_story(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+
+    created = manager.add_spec(work_item_id, specification())
+    fetched = manager.get_spec(work_item_id)
+    approved = manager.approve_spec(work_item_id)
+
+    assert created["workItemId"] == work_item_id
+    assert created["status"] == "draft"
+    assert fetched == created
+    assert approved["status"] == "approved"
+
+
+def test_specification_commands_reject_non_story_types(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request(
+        [
+            {
+                "type": "bug",
+                "request": "Fix failure",
+                "description": "Creation fails.",
+                "stepsToReproduce": "Run the command.",
+                "expectedResult": "It succeeds.",
+                "actualResult": "It fails.",
+            }
+        ]
+    )[0]["id"]
+
+    with pytest.raises(SpecificationValidationError):
+        manager.add_spec(work_item_id, specification())

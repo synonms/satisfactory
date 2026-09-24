@@ -6,9 +6,9 @@ argument-hint: A user story or chore work item ID from the board.
 
 # Specification Writing
 
-Use this workflow when the software-architect agent receives a specification request. The semantic and operation contract in `.agents/resources/specifications.md` is authoritative. Specification persistence is owned by `python -m tools.specifications`; never inspect or modify its storage directly.
+Use this workflow when the software-architect agent receives a specification request. The semantic and operation contract in `.agents/resources/specifications.md` is authoritative. Specification persistence is owned by `python -m tools.work_items`; never inspect or modify its storage directly.
 
-Do not modify existing work items, move items between lifecycle folders, or create any other files. Those are orchestrator responsibilities.
+Do not modify existing work-item fields directly, move items between lifecycle folders, or create any other files. Specification changes must only be made through `add_spec`, `revise_spec`, and `approve_spec`.
 
 ## 1. Retrieve the work item
 
@@ -40,7 +40,7 @@ Each task should include:
 ## 4. Create draft specification
 
 - Generate the specification JSON as per schema `.agents/schemas/specification.schema.json`.
-- Write the input to a temporary JSON file, call `python -m tools.specifications create --input {temporary-file}`, and remove the temporary file after the command finishes.
+- Write the input to a temporary JSON file, call `python -m tools.work_items add_spec {work_item_id} --input {temporary-file}`, and remove the temporary file after the command finishes.
 - Treat a nonzero exit code as a blocker. Report the structured error and do not create records manually.
 
 ## 5. Refine specification
@@ -48,7 +48,7 @@ Each task should include:
 - Present the draft specification to the user for review and request feedback or approval from the user.
 - If the user requests changes:
   - Revise the specification as needed based on the user input.
-  - Persist any changes to the ADLC board with `python -m tools.specifications update --input {temporary-file}` after writing the input to a temporary JSON file and removing the temporary file after the command finishes.
+  - Persist any changes to the ADLC board with `python -m tools.work_items revise_spec {work_item_id} --input {temporary-file}` after writing the input to a temporary JSON file and removing the temporary file after the command finishes.
   - Treat a nonzero exit code as a blocker. Report the structured error and do not update records manually.
   - Once the updated draft is ready, present it to the user for review.
   - Repeat the review/revise loop until the user approves the specification.
@@ -57,7 +57,7 @@ Each task should include:
 
 After human approval:
 
-- Mark the specification as approved with `python -m tools.specifications approve {work-item-id}`
+- Mark the specification as approved with `python -m tools.work_items approve_spec {work_item_id}`
 - Treat a nonzero exit code as a blocker. Report the structured error and do not update records manually.
     
 ## 7. Report the result

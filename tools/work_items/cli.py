@@ -31,7 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--board-root", type=Path, default=Path("board"))
     commands = parser.add_subparsers(dest="command", required=True)
 
-    create = commands.add_parser("create-request")
+    create = commands.add_parser("create-request", aliases=["create"])
     create.add_argument("--input", default="-")
 
     get = commands.add_parser("get")
@@ -42,9 +42,24 @@ def build_parser() -> argparse.ArgumentParser:
     list_command.add_argument("--type", dest="item_type", choices=[item.value for item in WorkItemType])
     list_command.add_argument("--request-id")
 
-    change_status = commands.add_parser("change-status")
-    change_status.add_argument("work_item_id")
-    change_status.add_argument("status", choices=[status.value for status in WorkItemStatus])
+    update_status = commands.add_parser("change-status", aliases=["update_status"])
+    update_status.add_argument("work_item_id")
+    update_status.add_argument("status", choices=[status.value for status in WorkItemStatus])
+
+    add_spec = commands.add_parser("add_spec")
+    add_spec.add_argument("work_item_id")
+    add_spec.add_argument("--input", default="-")
+
+    revise_spec = commands.add_parser("revise_spec")
+    revise_spec.add_argument("work_item_id")
+    revise_spec.add_argument("--input", default="-")
+
+    get_spec = commands.add_parser("get_spec", aliases=["get-spec"])
+    get_spec.add_argument("work_item_id")
+
+    approve_spec = commands.add_parser("approve_spec", aliases=["approve-spec"])
+    approve_spec.add_argument("work_item_id")
+
     return parser
 
 
@@ -52,13 +67,13 @@ def main(argv: list[str] | None = None) -> int:
     arguments = build_parser().parse_args(argv)
     try:
         service = create_service(arguments.board_root)
-        if arguments.command == "create-request":
+        if arguments.command in {"create-request", "create"}:
             payload = _read_input(arguments.input)
             if not isinstance(payload, list):
                 from .models import WorkItemValidationError
 
                 raise WorkItemValidationError("Creation input must be a JSON array")
-            result: Any = service.create_request(payload)
+            result: Any = service.create(payload)
         elif arguments.command == "get":
             result = service.get(arguments.work_item_id)
         elif arguments.command == "list":
@@ -67,13 +82,29 @@ def main(argv: list[str] | None = None) -> int:
                 item_type=WorkItemType(arguments.item_type) if arguments.item_type else None,
                 request_id=arguments.request_id,
             )
-        elif arguments.command == "change-status":
-            result = service.change_status(
-                arguments.work_item_id, WorkItemStatus(arguments.status)
-            )
+        elif arguments.command in {"change-status", "update_status"}:
+            result = service.update_status(arguments.work_item_id, WorkItemStatus(arguments.status))
+        elif arguments.command == "add_spec":
+            payload = _read_input(arguments.input)
+            if not isinstance(payload, dict):
+                from .models import SpecificationValidationError
+
+                raise SpecificationValidationError("Creation input must be a JSON object")
+            result: Any = service.add_spec(arguments.work_item_id, payload)
+        elif arguments.command == "revise_spec":
+            payload = _read_input(arguments.input)
+            if not isinstance(payload, dict):
+                from .models import SpecificationValidationError
+
+                raise SpecificationValidationError("Revise input must be a JSON object")
+            result: Any = service.revise_spec(arguments.work_item_id, payload)
+        elif arguments.command in {"get_spec", "get-spec"}:
+            result = service.get_spec(arguments.work_item_id)
+        elif arguments.command in {"approve_spec", "approve-spec"}:
+            result = service.approve_spec(arguments.work_item_id)
         else:
-            from .models import WorkItemValidationError
-            raise WorkItemValidationError(f"Unknown command: {arguments.command}")
+            from .models import SpecificationValidationError
+            raise SpecificationValidationError(f"Unknown command: {arguments.command}")
 
     except WorkItemError as error:
         _write_json(

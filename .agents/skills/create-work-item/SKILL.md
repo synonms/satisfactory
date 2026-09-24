@@ -41,7 +41,7 @@ After approval:
 1. Build a JSON array containing one object per approved work item in proposal order.
 2. Include `type`, `request`, and `description` on every object, plus `source` only when the request came from an external system.
 3. For a user story or chore, include `acceptanceCriteria` as an array of independently testable description strings. For a bug, include `stepsToReproduce`, `expectedResult`, and `actualResult`. For documentation, include `content`.
-4. Do not provide IDs, criterion IDs, creation dates, or statuses; the service owns those fields.
+4. Do not provide IDs, criterion IDs, creation dates, statuses, or specification content; the service owns those fields.
 5. Write the input to a temporary JSON file, call `python -m tools.work_items create-request --input {temporary-file}`, and remove the temporary file after the command finishes.
 6. Treat a nonzero exit code as a blocker. Report the structured error and do not create records manually.
 

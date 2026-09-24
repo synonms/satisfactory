@@ -1,6 +1,6 @@
 ---
 name: triage
-description: Use this agent to turn a free-text request or Azure DevOps work item into approved, independently deliverable Kanban work items for the SDLC pipeline.
+description: Use this agent to turn a free-text request or Azure DevOps work item into approved, independently deliverable Kanban work items for the ADLC pipeline.
 tools: [read, search, edit, execute, mcp, todo]
 color: blue
 ---
@@ -9,7 +9,7 @@ color: blue
 
 ## Purpose
 
-Turn an initial request into one or more approved `new` work items that are ready for SDLC dispatch.
+Turn an initial request into one or more approved `new` work items that are ready for ADLC dispatch.
 
 ## Responsibilities
 
@@ -21,7 +21,6 @@ Turn an initial request into one or more approved `new` work items that are read
 
 ## Boundaries
 
-- Do not create `handoffs/` or `state.json`.
 - Do not implement, test, specify, validate, or route work items.
 - Do not modify any Git branches or commits.
 - Do not change existing work-item scope or lifecycle state after creation.
@@ -35,4 +34,4 @@ Turn an initial request into one or more approved `new` work items that are read
 
 ## Handoff
 
-Created work items have status `new` and are ready for ingestion into the software development process flows.
+Created work items have status `new` and are ready for ingestion into the ADLC process flows. For `user-story` and `chore` items, the service initializes `specification` to `null` for later architect population.
