@@ -1,0 +1,169 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Specification",
+  "description": "A structured representation of a feature specification for a user story or chore work item",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["workItemId", "created", "status", "summary", "acceptanceCriteria", "architecturalSummary", "tasks"],
+  "properties": {
+    "workItemId": {
+      "type": "string",
+      "pattern": "^[0-9]{5}-[1-9][0-9]*$",
+      "description": "Unique identifier for the subject work item"
+    },
+    "created": {
+      "type": "string",
+      "format": "date",
+      "description": "Date specification was created"
+    },
+    "status": {
+      "type": "string",
+      "description": "Current status of the specification",
+      "enum": ["draft", "approved"]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Brief description of the feature/chore and the problem it solves"
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "description": "Acceptance criteria from the work item",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9]{5}-[1-9][0-9]*\\.[1-9][0-9]*$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["id", "description"]
+      },
+      "minItems": 1
+    },
+    "architecturalSummary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "High-level description of the approach: affected layers, components, data flow, and how this specification will be satisfied. Reference existing architecture and conventions rather than restating them."
+    },
+    "keyDesignDecisions": {
+      "type": "array",
+      "description": "Key design decisions and rationale",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "apiContracts": {
+      "type": "array",
+      "description": "Endpoint definitions with OpenAPI-style schemas for requests/responses",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "databaseSchema": {
+      "type": "array",
+      "description": "Tables/collections, relationships, constraints, and migrations required",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "uiComponents": {
+      "type": "array",
+      "description": "Components, user interactions, and view/state behaviour required",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "testingRequirements": {
+      "type": "array",
+      "description": "Testing scenarios and coverage expectations that quality-assurance-engineer must satisfy",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "description": "Tasks requiring implementation, generally split per technology/programming-language. Each task is handed to a specialised engineer agent.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier of the task"
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Owner of the task, typically a specialised engineer agent"
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1,
+            "description": "What this task covers"
+          },
+          "affectedPaths": {
+            "type": "array",
+            "description": "Paths to projects/folders/files affected by the intended change",
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+          },
+          "contracts": {
+            "type": "array",
+            "description": "Contracts produced/consumed - APIs, DTOs, events, schemas shared with other tasks.",
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+          },
+          "dependencies": {
+            "type": "array",
+            "description": "Sequencing/dependencies - must run before/after which other chunk, if any.",
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+          },
+          "acceptanceCriteriaCovered": {
+            "type": "array",
+            "description": "Acceptance criteria covered - identifiers from above.",
+            "items": {
+                "type": "string",
+                "minLength": 1
+            }
+          }
+        },
+        "required": ["id", "owner", "scope", "acceptanceCriteriaCovered"]
+      },
+      "minItems": 1
+    },
+    "crossTaskIntegrationPoints": {
+      "type": "array",
+      "description": "e.g. \"React frontend consumes the `/employees` endpoint contract produced by the .NET backend chunk\"",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "openQuestionsAndRisks": {
+      "type": "array",
+      "description": "Anything that needs resolution before or during implementation",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

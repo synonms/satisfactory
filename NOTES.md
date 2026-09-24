@@ -336,11 +336,11 @@ flowchart TD
   - .id
   - board.jsonl
   - 00001/
-    - 00001-1.work-item.md [triage]
-    - 00001-2.work-item.md [triage]
+    - 00001-1.work-item.json [triage]
+    - 00001-2.work-item.json [triage]
     - 00001-1/
       - 00001-1.state.json [orchestrator]
-      - 00001-1.specification.md [architect]
+      - 00001-1.specification.json [architect]
       - task-1/
         - 00001-1.task-1.implementation.1.md [engineer]
         - 00001-1.task-1.testing.1.md [qa]

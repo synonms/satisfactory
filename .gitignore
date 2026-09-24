@@ -298,3 +298,5 @@ __pycache__/
 *.pubxml
 
 /PrecompiledWeb/Atlas.Dcp.Api
+
+board/

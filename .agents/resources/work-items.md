@@ -6,7 +6,7 @@ This document defines the work-item semantics and agent-facing operations for th
 
 A work item is the stakeholder-readable unit of requested change. It captures scope, type, acceptance or validation requirements, and lifecycle state before the SDLC workflow creates implementation handoffs. A single change request may be broken down into multiple work items, but only if the work items are entirely independent and can be implemented in isolation.
 
-Work items are currently stored as Markdown files on the Kanban board, but agents should treat that as an adapter detail. The durable contract is the work-item identity, type, required fields, status values, and lifecycle transitions. A future store, such as SQLite, must preserve those semantics even if paths and filenames are replaced by queries and records.
+Work items are currently stored as JSON files on the Kanban board, but agents should treat that as an adapter detail. The durable contract is the work-item identity, type, required fields, status values, and lifecycle transitions. A future store, such as SQLite, must preserve those semantics even if paths and filenames are replaced by queries and records.
 
 ## Types
 
@@ -81,4 +81,4 @@ Triage may call `create-request`, `get`, and `list`. The dispatcher may call `ge
 - Split a request into as many independently deliverable work items as needed.
 - Acceptance criteria must be testable without relying on conversation history.
 - Each work item has exactly one type.
-- Do not change existing acceptance criteria or scope after SDLC work begins; create a new work item for new scope.
+- Do not change existing acceptance criteria or scope after ADLC work begins; create a new work item for new scope.
