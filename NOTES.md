@@ -246,88 +246,95 @@ The generator reads the workbench artifacts and emits the packet. The agent's jo
 Two forms: `handoff.md` is what the human reads. `handoff.json` is what the next agent loads. Both come from the same source artifacts. If they diverge, the JSON wins.
 
 
+### Triage and Design flow:
 
 ```mermaid
 flowchart TD
-  subgraph Shared Docs
-    WI_STATE[("{work-item-id}/state.json")]
-    BOARD[("board/board.jsonl")]
+  subgraph Triage
+    TRIAGE(("triage"))
+    WORK_ITEM[("Work Item")]   
   end
-  subgraph Work Item Creation
-    REQUEST_WRITER(("request-writer"))
-    CATEGORISE{"Categorise"}
-    USER_STORY_TICKET[("{work_item_id}.{title}.user-story.md")]   
-    CHORE_TICKET[("{work_item_id}.{title}.chore.md")]   
-    BUG_TICKET[("{work_item_id}.{title}.bug.md")]   
-    DOC_TICKET[("{work_item_id}.{title}.documentation.md")]   
-  end
-  subgraph Feature Flow
+  subgraph Design
     SOFTWARE_ARCHITECT(("software-architect"))
-    SPECIFICATION[("{work_item_id}.specification.md \n - Tasks[{work_item_id}-1] \n... \n - Tasks[{work_item_id}-n]")]   
+    SPECIFICATION["Specification"]   
+    TASKS["Tasks"]   
+    WORK_ITEM_WITH_DESIGN[("Work Item")]   
     HUMAN[["Human Review"]]
   end
-  START[Request] --> REQUEST_WRITER
-  REQUEST_WRITER --> CATEGORISE
-  CATEGORISE -->|User Story| USER_STORY_TICKET
-  CATEGORISE -->|Chore| CHORE_TICKET
-  CATEGORISE -->|Bug| BUG_TICKET
-  CATEGORISE -->|Documentation| DOC_TICKET
-  USER_STORY_TICKET --> SOFTWARE_ARCHITECT
-  CHORE_TICKET --> SOFTWARE_ARCHITECT
+  START[Request] --> TRIAGE
+  TRIAGE -->|create| WORK_ITEM
+  WORK_ITEM --> SOFTWARE_ARCHITECT
   SOFTWARE_ARCHITECT --> SPECIFICATION
-  SPECIFICATION --> HUMAN
+  SOFTWARE_ARCHITECT --> TASKS
+  SPECIFICATION -->|add_spec| WORK_ITEM_WITH_DESIGN
+  TASKS -->|add_spec| WORK_ITEM_WITH_DESIGN
+  WORK_ITEM_WITH_DESIGN --> HUMAN
 ```
 
+### Implementation flow:
+
 ```mermaid
 flowchart TD
-  subgraph Task 1
-    SOFTWARE_ENGINEER_1(("software-engineer"))
-    HO_IMPLEMENTATION_1[("{work_item_id}-1.{iteration}.implementation.md")]
-    QA_ENGINEER_1(("quality-assurance-engineer (unit)"))
-    HO_TESTING_1[("{work_item_id}-1.{iteration}.testing.md")]
-    REVIEWER_1(("reviewer"))
-    HO_REVIEW_1[("{work_item_id}-1.{iteration}.review.md")]
+  subgraph Init
+    WORK_ITEM[("Work Item")]   
+    ORCHESTRATOR(("orchestrator"))
+    FOREACH_TASK["Task 0..n"]
   end
-  subgraph Task N
-    SOFTWARE_ENGINEER_N(("software-engineer"))
-    HO_IMPLEMENTATION_N[("{work_item_id}-N.{iteration}.implementation.md")]
-    QA_ENGINEER_N(("quality-assurance-engineer (unit)"))
-    HO_TESTING_N[("{work_item_id}-N.{iteration}.testing.md")]
-    REVIEWER_N(("reviewer"))
-    HO_REVIEW_N[("{work_item_id}-N.{iteration}.review.md")]
+  subgraph Per Task
+    SWE_GET_TASK[("Task")]
+    SOFTWARE_ENGINEER(("software-engineer"))
+    HO_SWE_ORCHESTRATOR(("orchestrator"))
+
+    QAE_GET_TASK[("Task")]
+    QA_ENGINEER(("quality-assurance-engineer (unit)"))
+    HO_QAE_ORCHESTRATOR(("orchestrator"))
+
+    REV_GET_TASK[("Task")]
+    REVIEWER(("reviewer"))
+    HO_REV_ORCHESTRATOR(("orchestrator"))
   end
   subgraph Integration
+    INT_GET_WORK_ITEM["Work Item"]
     INTEGRATION_QA_ENGINEER(("quality-assurance-engineer (integration)"))
-    HO_INTEGRATION_TESTING[("{work_item_id}.{iteration}.integration-testing.md")]
+    HO_INT_ORCHESTRATOR(("orchestrator"))
+
+    VAL_GET_WORK_ITEM["Work Item"]
     VALIDATOR(("validator"))
+    HO_VAL_ORCHESTRATOR(("orchestrator"))
+
     HUMAN[["Human Review"]]
   end
-  TASK1_START["Tasks[{work_item_id}-1]"] --> SOFTWARE_ENGINEER_1
-  SOFTWARE_ENGINEER_1 -.-> HO_IMPLEMENTATION_1
-  SOFTWARE_ENGINEER_1 --> QA_ENGINEER_1
-  QA_ENGINEER_1 -.-> HO_TESTING_1
-  QA_ENGINEER_1 -->|Fail| SOFTWARE_ENGINEER_1
-  QA_ENGINEER_1 -->|Pass| REVIEWER_1
-  REVIEWER_1 -.-> HO_REVIEW_1
-  REVIEWER_1 -->|Fail| SOFTWARE_ENGINEER_1
-  REVIEWER_1 -->|Pass| INTEGRATION_QA_ENGINEER
+  WORK_ITEM --> ORCHESTRATOR
+  ORCHESTRATOR --> FOREACH_TASK
+  
+  FOREACH_TASK -->|assign task| SOFTWARE_ENGINEER
+  SWE_GET_TASK -.->|get| SOFTWARE_ENGINEER
+  SOFTWARE_ENGINEER -->|record_activity| HO_SWE_ORCHESTRATOR
 
-  TASKN_START["Tasks[{work_item_id}-N]"] --> SOFTWARE_ENGINEER_N
-  SOFTWARE_ENGINEER_N -.-> HO_IMPLEMENTATION_N
-  SOFTWARE_ENGINEER_N --> QA_ENGINEER_N
-  QA_ENGINEER_N -.-> HO_TESTING_N
-  QA_ENGINEER_N -->|Fail| SOFTWARE_ENGINEER_N
-  QA_ENGINEER_N -->|Pass| REVIEWER_N
-  REVIEWER_N -.-> HO_REVIEW_N
-  REVIEWER_N -->|Fail| SOFTWARE_ENGINEER_N
-  REVIEWER_N -->|Pass| INTEGRATION_QA_ENGINEER
+  HO_SWE_ORCHESTRATOR -->|assign task| QA_ENGINEER  
+  QAE_GET_TASK -.->|get| QA_ENGINEER
+  QA_ENGINEER -->|record_activity| HO_QAE_ORCHESTRATOR
 
-  INTEGRATION_QA_ENGINEER -.-> HO_INTEGRATION_TESTING
-  INTEGRATION_QA_ENGINEER -->|Fail| X1(TODO: Where?)
-  INTEGRATION_QA_ENGINEER -->|Pass| VALIDATOR
-  VALIDATOR -->|Fail| X2(TODO: Where?)
-  VALIDATOR -->|Pass| HUMAN
-  HUMAN -->|Fail| X3(TODO: Where?)
+  HO_QAE_ORCHESTRATOR -->|Testing Failed - assign_task| SOFTWARE_ENGINEER
+  HO_QAE_ORCHESTRATOR -->|Testing Passed - assign_task| REVIEWER
+
+  REV_GET_TASK -.->|get| REVIEWER
+  REVIEWER -->|record_activity| HO_REV_ORCHESTRATOR
+
+  HO_REV_ORCHESTRATOR -->|Review Rejected - assign task| SOFTWARE_ENGINEER
+  HO_REV_ORCHESTRATOR -->|Review Approved - next task| FOREACH_TASK
+  HO_REV_ORCHESTRATOR -->|Review Approved - all tasks complete| INTEGRATION_QA_ENGINEER
+
+  INT_GET_WORK_ITEM -.->|get| INTEGRATION_QA_ENGINEER
+  INTEGRATION_QA_ENGINEER -->|record_activity| HO_INT_ORCHESTRATOR
+  HO_INT_ORCHESTRATOR -->|Testing Failed - assign task| SOFTWARE_ENGINEER
+  HO_INT_ORCHESTRATOR -->|Testing Passed - assign_task| VALIDATOR
+
+  VAL_GET_WORK_ITEM -.->|get| VALIDATOR
+  VALIDATOR -->|record_activity| HO_VAL_ORCHESTRATOR
+  HO_VAL_ORCHESTRATOR -->|Validation Failed - assign_task| SOFTWARE_ENGINEER
+  HO_VAL_ORCHESTRATOR -->|Validation Passed - seek approval| HUMAN
+  HUMAN -->|Rejected - assign_task| SOFTWARE_ENGINEER
   HUMAN -->|Approved| DONE["Done"]
 
 ```

@@ -1,6 +1,6 @@
 # ADLC Workflow
 
-The `adlc` workflow is the orchestration contract for the AI Software Factory. It defines how a work item moves from intake to a delivered, validated change. Work-item semantics and operations are defined in `.agents/resources/work-items.md`; persistence is encapsulated by `python -m tools.work_items`.
+The `adlc` workflow is the orchestration contract for the Agentic Software Lifecycle. It defines how a work item moves from intake to a delivered, validated change. Work-item semantics and operations are defined in `.agents/resources/work-items.md`; persistence is encapsulated by `python -m tools.work_items`.
 
 ## Core principle
 
@@ -12,56 +12,11 @@ The **orchestrator** agent manages work item state and decides what is to be run
 
 This separation is what makes loop termination guaranteed rather than hoped for: an agent cannot reset its own attempt counter or route itself past a guard.
 
-## Artifact layout
 
-```
-board/
-  {request-id}/
-    {work-item-id}/
-      {work-item-id}.state.json
-      specification.md
-      tasks/
-        {task-id}/
-          changelog.{n}.md
-          testlog.{n}.md
-      integration/
-        testlog.{n}.md
-      validationlog.{n}.md
-```
-
-`state.json` is the source of truth for high-level routing only. Work-item records are the requirement payload and include first-class task state/history via the `tasks` array, retrieved through the work-item CLI. Agents must not depend on persistence paths or formats.
-
-Iteration numbers are scoped to the task, not to the work item. Two tasks may both be on `changelog.2.md` without collision.
-
-## Control file: `state.json`
-
-```jsonc
-{
-  "workItemId": "00001-1",
-  "type": "user-story",              // user-story | chore | bug | documentation
-  "flow": "flow-1",                  // flow-1 | flow-2 | flow-3
-  "state": "chunk-implementation",
-  "specificationStatus": "Approved", // null | Draft | Approved
-  "branch": "feature/00001-1-add-login-feature",
-  "integration": { "state": "not-started", "attempts": 0, "lastFailureSignature": null },
-  "validation": { "outcome": null, "attempts": 0 },
-  "budget": {
-    "maxChunkRemediationLoops": 3,
-    "maxIntegrationLoops": 3,
-    "maxValidationLoops": 3,
-    "maxTotalAgentRuns": 40,
-    "totalAgentRuns": 17,
-    "totalDurationSeconds": 620,
-    "totalTokens": 145000,
-    "totalEstimatedCostUsd": 0.58
-  },
-  "escalations": []
-}
-```
 
 ### Ownership rules
 
-- Only the driver mutates `state.json`. That includes `state`, integration/validation/budget counters, and `escalations`.
+- Only the orchestrator mutates work item state. That includes `status`, integration/validation/budget counters, and `escalations`.
 - Task state, task attempts, and task history are mutated through `python -m tools.work_items record_activity` and stored on the work-item `tasks` array.
 - Before any driver or agent consumes an existing `state.json`, validate it with `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json`. Install the validator first with `python -m pip install -r requirements-dev.txt`. On validation failure, do not consume or modify the file; report the validation errors and treat the work item as blocked pending correction.
 - Only the driver changes an existing work item's lifecycle status after triage creates it. Use `python -m tools.work_items change-status`; never modify work-item persistence directly.

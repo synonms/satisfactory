@@ -16,20 +16,22 @@ This file is the entry point for agents working in this repository. Use it to fi
 - **Python Script Tests**: `tests/`
 
 ## Agent directory
-- **triage** - Categorises incoming requests and creates approved work items.
-- **software-architect** - Writes technical specifications, with implementation plans decomposed into technology-specific tasks for the software engineers.
-- **software-engineer** - Implements approved technical specification chunks across the repository using the applicable technology rules and resources.
-- **quality-assurance-engineer** - Implements automated tests from approved specifications, writes failing reproduction tests for bugs, and handles ad hoc testing work.
 - **documentation-writer** - Implements documentation work items against the repository's documentation.
 - **implementation-validator** - Independently validates delivered implementation and test work against upstream requirements.
+- **orchestrator** - Coordinates the implementation and validation of work items using the Agentic Development Lifecycle.
+- **quality-assurance-engineer** - Implements automated tests from approved specifications, writes failing reproduction tests for bugs, and handles ad hoc testing work.
+- **software-architect** - Writes technical specifications, with implementation plans decomposed into technology-specific tasks for the software engineers.
+- **software-engineer** - Implements approved technical specification chunks across the repository using the applicable technology rules and resources.
+- **triage** - Categorises incoming requests and creates approved work items.
 
 ## Skills
-- **create-work-item** - Turn a free-text request or Azure DevOps ticket into a work item on the ADLC board.
 - **create-specification** - Turn a user story or chore work item into an implementation-ready specification on the ADLC board.
+- **create-work-item** - Turn a free-text request or Azure DevOps ticket into a work item on the ADLC board.
 
 ## Reference resources
-- Work Item management: `.agents/resources/work-items.md`
 - Specification management: `.agents/resources/specifications.md`
+- Task management: `.agents/resources/tasks.md`
+- Work Item management: `.agents/resources/work-items.md`
 
 - Build and test commands: `.agents/resources/developer-commands.md`
 - .NET coding rules: `.agents/rules/dotnet-coding-rules.md`

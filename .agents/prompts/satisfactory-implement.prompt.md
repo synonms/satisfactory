@@ -20,9 +20,8 @@ A work item id in format `{request_id}-{sequence}` where request-id is a 5 digit
 2. Retrieve the work item corresponding to the provided work item id. If the work item is not found, report the error and stop.
 3. Assert the work item type is `user-story`, `chore`, `bug` or `documentation`. If it is any other type, report the error and stop.
 4. If the work item is already in a terminal state (e.g., `done`, `cancelled`), report that no further action is required and stop.
-5. If the work item is `user-story` or `chore`, ensure that it has an associated implementation specification. If not, report the issue and stop. If it does, follow the `feature` workflow.
-6. If the work item is `bug`, follow the `bugfix` workflow.
-7. If the work item is `documentation`, follow the `documentation` workflow.
+5. Ensure that the work item has an associated implementation specification and collection of 1 or more tasks. If not, report the issue and stop.
+6. Follow the `adlc` workflow.
 
 ## Output
 
