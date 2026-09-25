@@ -4,13 +4,13 @@ This document defines the specification semantics and agent-facing operations fo
 
 ## Purpose
 
-A specification is the architectural design and implementation plan for a user story or chore work item. It captures design decisions and integration points before the ADLC workflow creates implementation handoffs.
+A specification is the architectural design and implementation plan for a work item. It captures design decisions and integration points before the ADLC workflow creates implementation handoffs.
 
 Specifications are stored as the `specification` property nested inside a work-item document on the Kanban board. Agents should treat that as an adapter detail. The durable contract is the work-item identity, type, required fields, status values, and lifecycle transitions. A future store, such as SQLite, must preserve those semantics even if paths and filenames are replaced by queries and records.
 
 ## Identity
 
-Specifications have a 1-1 relationship to a `user-story` or `chore` work item. As such, a specification can be uniquely identified by a work item id.
+Specifications have a 1-1 relationship to a work item. As such, a specification can be uniquely identified by a work item id.
 
 - Request IDs are sequential five-digit numbers starting at `00001`.
 - Work-item IDs use `{request-id}-{work-item-sequence}`, where `work-item-sequence` starts at `1` for each request, for example `00001-1`.

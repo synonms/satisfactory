@@ -25,7 +25,7 @@ A free-text request or Azure DevOps work item id. If the input is a 5 digit numb
 
 ## Output
 
-One or more work items to be created on the ADLC Kanban board. `user-story` and `chore` items are created with `specification: null` for later architectural authoring. All new work items initialize with an empty `tasks` array.
+One or more work items to be created on the ADLC Kanban board. All new work items initialize with `specification: null` for later architectural authoring and an empty `tasks` array for later task authoring.
 
 ## Rules
 

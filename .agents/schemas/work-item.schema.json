@@ -89,7 +89,7 @@
       "description": "Content to be included (Documentation only)"
     },
     "specification": {
-      "description": "Implementation specification for user-story/chore work items",
+      "description": "Implementation specification for this work item",
       "anyOf": [
         {
           "type": "null"
@@ -128,8 +128,7 @@
         "not": {
           "anyOf": [
             { "required": ["acceptanceCriteria"] },
-            { "required": ["content"] },
-            { "required": ["specification"] }
+            { "required": ["content"] }
           ]
         }
       }
@@ -146,8 +145,7 @@
             { "required": ["acceptanceCriteria"] },
             { "required": ["stepsToReproduce"] },
             { "required": ["expectedResult"] },
-            { "required": ["actualResult"] },
-            { "required": ["specification"] }
+            { "required": ["actualResult"] }
           ]
         }
       }

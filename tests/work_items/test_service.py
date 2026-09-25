@@ -5,7 +5,6 @@ import pytest
 
 from tools.work_items.json_repository import JsonFileWorkItemRepository
 from tools.work_items.models import (
-    SpecificationValidationError,
     TaskValidationError,
     WorkItemConflictError,
     WorkItemStatus,
@@ -27,6 +26,17 @@ def story(request: str = "Add coded work-item management") -> dict:
         "request": request,
         "description": "Agents manage work items through stable operations.",
         "acceptanceCriteria": ["An agent can create a request.", "An agent can read an item."],
+    }
+
+
+def bug() -> dict:
+    return {
+        "type": "bug",
+        "request": "Fix failing create-request",
+        "description": "The create operation fails under valid input.",
+        "stepsToReproduce": "Run create-request with a valid payload.",
+        "expectedResult": "The work item is created.",
+        "actualResult": "The command fails with a validation error.",
     }
 
 
@@ -63,6 +73,8 @@ def test_create_request_assigns_stable_ids_and_persists_json(tmp_path: Path) -> 
     assert [item["id"] for item in created] == ["00001-1", "00001-2"]
     assert created[0]["acceptanceCriteria"][1]["id"] == "00001-1.2"
     assert created[0]["created"] == "2026-09-21"
+    assert created[0]["specification"] is None
+    assert created[1]["specification"] is None
     assert (tmp_path / "board/00001/00001-1.work-item.json").is_file()
     assert manager.get("00001-2") == created[1]
 
@@ -159,23 +171,17 @@ def test_specification_lifecycle_for_user_story(tmp_path: Path) -> None:
     assert updated_task["history"][0]["iteration"] == 1
 
 
-def test_specification_commands_reject_non_story_types(tmp_path: Path) -> None:
+def test_specification_lifecycle_for_bug(tmp_path: Path) -> None:
     manager = service(tmp_path / "board")
-    work_item_id = manager.create_request(
-        [
-            {
-                "type": "bug",
-                "request": "Fix failure",
-                "description": "Creation fails.",
-                "stepsToReproduce": "Run the command.",
-                "expectedResult": "It succeeds.",
-                "actualResult": "It fails.",
-            }
-        ]
-    )[0]["id"]
+    work_item_id = manager.create_request([bug()])[0]["id"]
 
-    with pytest.raises(SpecificationValidationError):
-        manager.add_spec(work_item_id, specification(), tasks())
+    created = manager.add_spec(work_item_id, specification(), tasks())
+    fetched = manager.get_spec(work_item_id)
+    approved = manager.approve_spec(work_item_id)
+
+    assert created["workItemId"] == work_item_id
+    assert fetched == created
+    assert approved["status"] == "approved"
 
 
 def test_add_spec_requires_tasks(tmp_path: Path) -> None:

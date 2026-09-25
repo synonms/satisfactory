@@ -17,8 +17,7 @@ Tasks are stored in the work-item `tasks` array and validated by `.agents/schema
 ## Relationship to Work Items and Specifications
 
 - A work item may contain zero or more tasks while `new`.
-- For `user-story` and `chore` work items, `add_spec` and `revise_spec` require a non-empty `tasks` array alongside the specification payload.
-- For `bug` and `documentation` work items, tasks are still first-class and should be authored before implementation begins.
+- For all work item types, `add_spec` and `revise_spec` require a non-empty `tasks` array alongside the specification payload.
 
 ## Task Contract
 

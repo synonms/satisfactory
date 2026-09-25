@@ -97,11 +97,7 @@ class JsonFileWorkItemRepository:
             raise SpecificationValidationError("'add_spec' requests must supply at least one task")
         with self._lock():
             work_item = self.get(work_item_id)
-            if "specification" not in work_item:
-                raise SpecificationValidationError(
-                    f"Work item {work_item_id} does not support specifications"
-                )
-            if work_item["specification"]:
+            if work_item.get("specification"):
                 raise WorkItemConflictError(f"Work item {work_item_id} already has a specification")
 
             self._specification_validator.validate(specification)
@@ -121,11 +117,7 @@ class JsonFileWorkItemRepository:
             raise SpecificationValidationError("'revise_spec' requests must supply at least one task")
         with self._lock():
             work_item = self.get(work_item_id)
-            if "specification" not in work_item:
-                raise SpecificationValidationError(
-                    f"Work item {work_item_id} does not support specifications"
-                )
-            if not work_item["specification"]:
+            if not work_item.get("specification"):
                 raise WorkItemConflictError(f"Work item {work_item_id} does not have a specification to revise")
             if work_item["specification"]["status"] == "approved":
                 raise WorkItemConflictError(f"Work item {work_item_id} already has an approved specification")
@@ -142,11 +134,7 @@ class JsonFileWorkItemRepository:
 
     def get_spec(self, work_item_id: str) -> Specification:
         work_item = self.get(work_item_id)
-        if "specification" not in work_item:
-            raise SpecificationValidationError(
-                f"Work item {work_item_id} does not support specifications"
-            )
-        specification = work_item["specification"]
+        specification = work_item.get("specification")
 
         if not specification:
             raise SpecificationNotFoundError(f"No specification found for work item {work_item_id}")
@@ -158,11 +146,7 @@ class JsonFileWorkItemRepository:
     def approve_spec(self, work_item_id: str) -> Specification:
         with self._lock():
             work_item = self.get(work_item_id)
-            if "specification" not in work_item:
-                raise SpecificationValidationError(
-                    f"Work item {work_item_id} does not support specifications"
-                )
-            specification = work_item["specification"]
+            specification = work_item.get("specification")
             if not specification:
                 raise SpecificationNotFoundError(f"No specification found for work item {work_item_id}")
             if specification["status"] != "draft":

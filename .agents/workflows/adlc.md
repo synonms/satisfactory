@@ -74,14 +74,14 @@ Iteration numbers are scoped to the task, not to the work item. Two tasks may bo
 | State | Next agent |
 | --- | --- |
 | `specification-draft` | none - human approval gate; the driver records the outcome |
-| `specification-approved` | `software-engineer` |
+| `specification-approved` | task owner from the next `tasks` entry (typically `software-engineer` or `documentation-writer`) |
 | `chunk-implementation` | `software-engineer` for the active task |
 | `chunk-testing` | `quality-assurance-engineer` for the active task |
 | `integration-testing` | `quality-assurance-engineer` (integration scope) |
 | `validation` | `implementation-validator` |
-| `bug-repro-test` | `quality-assurance-engineer` (flow 2 entry) |
-| `bug-fix` | `software-engineer` |
-| `documentation` | `documentation-writer` |
+| `bug-repro-test` | `quality-assurance-engineer` (optional bug-specific task state when explicitly planned) |
+| `bug-fix` | `software-engineer` (optional bug-specific task state when explicitly planned) |
+| `documentation` | `documentation-writer` (optional documentation-specific task state when explicitly planned) |
 | `ready-for-user` | none - final human review gate; the driver records the decision |
 | `done` | terminal - delivered and approved |
 | `blocked` | terminal - awaiting human intervention |
@@ -89,6 +89,8 @@ Iteration numbers are scoped to the task, not to the work item. Two tasks may bo
 ### Task states
 
 `not-started` -> `implemented` -> `tests-passing` | `tests-failing` -> `blocked`
+
+All work item types should enter ADLC only after a software-architect design pass has produced a specification and task list for the item.
 
 ## Flow 1: user story or chore
 

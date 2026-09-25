@@ -88,3 +88,11 @@ def test_schema_rejects_empty_requirement_text() -> None:
     item["content"] = ""
 
     assert list(VALIDATOR.iter_errors(item))
+
+
+@pytest.mark.parametrize("item_type", ["bug", "documentation"])
+def test_schema_allows_null_specification_for_non_feature_types(item_type: str) -> None:
+    item = work_item(item_type)
+    item["specification"] = None
+
+    VALIDATOR.validate(item)

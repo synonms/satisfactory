@@ -164,10 +164,6 @@ class WorkItemService:
         normalized_tasks = [deepcopy(dict(task)) for task in tasks_input]
 
         work_item = self.get(work_item_id)
-        if work_item["type"] not in {WorkItemType.USER_STORY.value, WorkItemType.CHORE.value}:
-            raise SpecificationValidationError(
-                f"Specifications are only supported for user-story and chore work items: {work_item_id}"
-            )
 
         specification = self._build_specification(work_item_id, normalized)
         tasks = self._build_tasks(work_item, normalized_tasks)
@@ -184,10 +180,6 @@ class WorkItemService:
         normalized_tasks = [deepcopy(dict(task)) for task in tasks_input]
 
         work_item = self.get(work_item_id)
-        if work_item["type"] not in {WorkItemType.USER_STORY.value, WorkItemType.CHORE.value}:
-            raise SpecificationValidationError(
-                f"Specifications are only supported for user-story and chore work items: {work_item_id}"
-            )
 
         specification = self._build_specification(work_item_id, normalized)
         tasks = self._build_tasks(work_item, normalized_tasks)
@@ -196,20 +188,12 @@ class WorkItemService:
 
 
     def get_spec(self, work_item_id: str) -> Specification:
-        work_item = self.get(work_item_id)
-        if work_item["type"] not in {WorkItemType.USER_STORY.value, WorkItemType.CHORE.value}:
-            raise SpecificationValidationError(
-                f"Specifications are only supported for user-story and chore work items: {work_item_id}"
-            )
+        self.get(work_item_id)
         return self._repository.get_spec(work_item_id)
 
 
     def approve_spec(self, work_item_id: str) -> Specification:
-        work_item = self.get(work_item_id)
-        if work_item["type"] not in {WorkItemType.USER_STORY.value, WorkItemType.CHORE.value}:
-            raise SpecificationValidationError(
-                f"Specifications are only supported for user-story and chore work items: {work_item_id}"
-            )
+        self.get(work_item_id)
 
         specification = self.get_spec(work_item_id)
         current_status = SpecificationStatus(specification["status"])
@@ -268,6 +252,7 @@ class WorkItemService:
                 record[field] = item[field]
 
         record["tasks"] = []
+        record["specification"] = None
 
         if item_type in {WorkItemType.USER_STORY, WorkItemType.CHORE}:
             criteria = item.get("acceptanceCriteria")
@@ -277,7 +262,6 @@ class WorkItemService:
                 {"id": f"{work_item_id}.{index}", "description": description}
                 for index, description in enumerate(criteria, start=1)
             ]
-            record["specification"] = None
         else:
             for field in WORK_ITEM_TYPE_INPUT_FIELDS[item_type]:
                 if field in item:

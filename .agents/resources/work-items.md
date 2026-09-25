@@ -75,7 +75,7 @@ Creation input is a JSON array in proposal order. Every item requires `type`, `r
 
 - User stories and chores require `acceptanceCriteria`, an array of independently verifiable description strings.
 - Every work item includes a service-managed `tasks` array. It is created as `[]` and later populated by task-authoring operations.
-- User stories and chores include a `specification` field managed by the service. It is created as `null` and may later be set via `add_spec`, `revise_spec`, and `approve_spec`.
+- Every work item includes a service-managed `specification` field. It is created as `null` and may later be set via `add_spec`, `revise_spec`, and `approve_spec`.
 - Bugs require `stepsToReproduce`, `expectedResult`, and `actualResult`.
 - Documentation items require `content` describing what must be produced or updated.
 

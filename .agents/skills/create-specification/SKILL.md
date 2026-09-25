@@ -1,7 +1,7 @@
 ---
 name: create-specification
-description: Use when creating an implementation specification for a User Story or Chore work item on the software-factory board.
-argument-hint: A user story or chore work item ID from the board.
+description: Use when creating an implementation specification for a work item on the software-factory board.
+argument-hint: A work item ID from the board.
 ---
 
 # Specification Writing
@@ -15,7 +15,6 @@ Do not modify existing work-item fields directly, move items between lifecycle f
 - Validate that the work item ID is in the format `{request_id}-{sequence}` where request-id is a 5 digit zero padded number and sequence is an incrementing integer.
 - Retrieve the work item corresponding to the provided work item ID: `python -m tools.work_items get {work_item_id}`
 - If the work item is not found, report the error and stop.
-- Verify the work item type is `user-story` or `chore`. If it is any other type, report the error and stop.
 
 ## 2. Establish scope
 

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Specification",
-  "description": "A structured representation of a feature specification for a user story or chore work item",
+  "description": "A structured representation of an implementation specification for any work item",
   "type": "object",
   "additionalProperties": false,
   "required": ["workItemId", "created", "status", "summary", "architecturalSummary"],
