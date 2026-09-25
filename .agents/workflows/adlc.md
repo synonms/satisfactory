@@ -1,6 +1,6 @@
-# SDLC Workflow
+# ADLC Workflow
 
-The `sdlc` workflow is the orchestration contract for the AI Software Factory. It defines how a work item moves from intake to a delivered, validated change. Work-item semantics and operations are defined in `.agents/resources/work-items.md`; persistence is encapsulated by `python -m tools.work_items`.
+The `adlc` workflow is the orchestration contract for the AI Software Factory. It defines how a work item moves from intake to a delivered, validated change. Work-item semantics and operations are defined in `.agents/resources/work-items.md`; persistence is encapsulated by `python -m tools.work_items`.
 
 ## Core principle
 
@@ -8,29 +8,30 @@ Each agent session is a pure function:
 
 > read state -> perform exactly one step -> write artifacts and append history -> stop.
 
-Agents never decide what runs next. The **driver** (a human following this document, or the automated dispatcher) reads `handoffs/{work-item-id}/state.json`, selects the next agent, starts a **new session with a fresh context window**, and applies the resulting state transition.
+The **orchestrator** agent manages work item state and decides what is to be run next by which agent. Implementation agents perform the work, write artifacts and report outome.
 
 This separation is what makes loop termination guaranteed rather than hoped for: an agent cannot reset its own attempt counter or route itself past a guard.
 
 ## Artifact layout
 
 ```
-handoffs/
-  {work-item-id}/
-    state.json
-    specification.md
-    chunks/
-      {chunk-id}/
-        changelog.{n}.md
+board/
+  {request-id}/
+    {work-item-id}/
+      {work-item-id}.state.json
+      specification.md
+      tasks/
+        {task-id}/
+          changelog.{n}.md
+          testlog.{n}.md
+      integration/
         testlog.{n}.md
-    integration/
-      testlog.{n}.md
-    validationlog.{n}.md
+      validationlog.{n}.md
 ```
 
-`state.json` is the single source of truth for routing. Work-item records are the requirement payload and are retrieved by stable ID through the work-item CLI. Agents must not depend on persistence paths or formats.
+`state.json` is the source of truth for high-level routing only. Work-item records are the requirement payload and include first-class task state/history via the `tasks` array, retrieved through the work-item CLI. Agents must not depend on persistence paths or formats.
 
-Iteration numbers are scoped to the chunk, not to the work item. Two chunks may both be on `changelog.2.md` without collision.
+Iteration numbers are scoped to the task, not to the work item. Two tasks may both be on `changelog.2.md` without collision.
 
 ## Control file: `state.json`
 
@@ -42,20 +43,6 @@ Iteration numbers are scoped to the chunk, not to the work item. Two chunks may 
   "state": "chunk-implementation",
   "specificationStatus": "Approved", // null | Draft | Approved
   "branch": "feature/00001-1-add-login-feature",
-  "activeChunk": "dotnet-backend",
-  "chunks": [
-    {
-      "id": "dotnet-backend",
-      "technology": "dotnet",
-      "dependsOn": [],
-      "state": "tests-failing",
-      "implementAttempts": 2,
-      "testAttempts": 2,
-      "lastFailureSignature": "sha256:9f2c...",
-      "latestChangelog": "handoffs/00001-1/chunks/dotnet-backend/changelog.2.md",
-      "latestTestlog": "handoffs/00001-1/chunks/dotnet-backend/testlog.2.md"
-    }
-  ],
   "integration": { "state": "not-started", "attempts": 0, "lastFailureSignature": null },
   "validation": { "outcome": null, "attempts": 0 },
   "budget": {
@@ -68,30 +55,14 @@ Iteration numbers are scoped to the chunk, not to the work item. Two chunks may 
     "totalTokens": 145000,
     "totalEstimatedCostUsd": 0.58
   },
-  "escalations": [],
-  "history": [
-    {
-      "ts": "2026-09-10T09:14:00Z",
-      "agent": "software-engineer",
-      "chunk": "dotnet-backend",
-      "result": "implemented",
-      "artifact": "handoffs/00001-1/chunks/dotnet-backend/changelog.2.md",
-      "metrics": {
-        "durationSeconds": 42,
-        "inputTokens": 14200,
-        "outputTokens": 1850,
-        "totalTokens": 16050,
-        "model": "claude-3-7-sonnet",
-        "estimatedCostUsd": 0.05
-      }
-    }
-  ]
+  "escalations": []
 }
 ```
 
 ### Ownership rules
 
-- Only the driver mutates `state.json`. That includes `state`, `chunks[].state`, attempt counters, `budget`, `escalations`, and `history`.
+- Only the driver mutates `state.json`. That includes `state`, integration/validation/budget counters, and `escalations`.
+- Task state, task attempts, and task history are mutated through `python -m tools.work_items record_activity` and stored on the work-item `tasks` array.
 - Before any driver or agent consumes an existing `state.json`, validate it with `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json`. Install the validator first with `python -m pip install -r requirements-dev.txt`. On validation failure, do not consume or modify the file; report the validation errors and treat the work item as blocked pending correction.
 - Only the driver changes an existing work item's lifecycle status after triage creates it. Use `python -m tools.work_items change-status`; never modify work-item persistence directly.
 - Agents write their numbered artifact and report an outcome. They propose; they do not route, and they do not touch `state.json`.
@@ -104,8 +75,8 @@ Iteration numbers are scoped to the chunk, not to the work item. Two chunks may 
 | --- | --- |
 | `specification-draft` | none - human approval gate; the driver records the outcome |
 | `specification-approved` | `software-engineer` |
-| `chunk-implementation` | `software-engineer` for `activeChunk` |
-| `chunk-testing` | `quality-assurance-engineer` for `activeChunk` |
+| `chunk-implementation` | `software-engineer` for the active task |
+| `chunk-testing` | `quality-assurance-engineer` for the active task |
 | `integration-testing` | `quality-assurance-engineer` (integration scope) |
 | `validation` | `implementation-validator` |
 | `bug-repro-test` | `quality-assurance-engineer` (flow 2 entry) |
@@ -115,7 +86,7 @@ Iteration numbers are scoped to the chunk, not to the work item. Two chunks may 
 | `done` | terminal - delivered and approved |
 | `blocked` | terminal - awaiting human intervention |
 
-### Chunk states
+### Task states
 
 `not-started` -> `implemented` -> `tests-passing` | `tests-failing` -> `blocked`
 
@@ -136,9 +107,9 @@ This workflow is defined in [documentation.md](documentation.md).
 Attempt caps alone permit an agent to thrash identically three times. All of the following apply together.
 
 1. **Per-edge attempt caps.** `maxChunkRemediationLoops`, `maxIntegrationLoops`, `maxValidationLoops`. Counters live in `state.json` and are incremented by the driver only.
-2. **No-progress detection.** After each test run, compute `lastFailureSignature` as a hash of the sorted set of failing test identifiers. Two consecutive identical signatures for the same chunk escalate to `blocked` immediately, regardless of remaining budget. This is the highest-value failsafe: it catches the loop where the same mistake is repeated with cosmetic variation.
+2. **No-progress detection.** After each test run, compute `lastFailureSignature` as a hash of the sorted set of failing test identifiers. Two consecutive identical signatures for the same task escalate to `blocked` immediately, regardless of remaining budget. This is the highest-value failsafe: it catches the loop where the same mistake is repeated with cosmetic variation.
 3. **Global run budget.** `maxTotalAgentRuns` is a hard circuit breaker across the entire work item. Exceeding it forces `blocked`.
-4. **Monotonic artifact rule.** Every agent run must produce a new numbered artifact. A run producing none is a failed run and still counts against `totalAgentRuns`.
+4. **Monotonic artifact rule.** Every agent run must produce a new numbered artifact and corresponding task activity entry. A run producing none is a failed run and still counts against `totalAgentRuns`.
 5. **Test-integrity guard.** Reject a `testlog` iteration in which the total test count decreased unless the testlog states an explicit justification. Prevents progress by deletion.
 6. **Ownership guard.** Check the diff before accepting a run:
    - `software-engineer` must not modify test files or test projects.
@@ -181,7 +152,7 @@ nextOwner: quality-assurance-engineer
 
 ### Handoff contract
 
-For detailed definitions of the information passed between agents, see the [AI Software Factory Handoff Contract](handoff-contract.md).
+For detailed definitions of task history and handoff metadata, see [.agents/resources/tasks.md](../resources/tasks.md).
 
 ## Technology specialisation
 

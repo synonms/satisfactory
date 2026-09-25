@@ -135,3 +135,77 @@ def test_cli_rejects_an_unknown_configured_backend(tmp_path: Path) -> None:
 
     assert process.returncode == 2
     assert json.loads(process.stderr)["error"]["code"] == "validation_error"
+
+
+def test_cli_get_task_and_record_activity(tmp_path: Path) -> None:
+    board = tmp_path / "board"
+    created = run_cli(
+        board,
+        "create-request",
+        "--input",
+        "-",
+        input_value=[
+            {
+                "type": "user-story",
+                "request": "Add task APIs",
+                "description": "Expose task-level ADLC operations.",
+                "acceptanceCriteria": ["A task can be read by id."]
+            }
+        ],
+    )
+    assert created.returncode == 0
+
+    add_spec = run_cli(
+        board,
+        "add_spec",
+        "00001-1",
+        "--input",
+        "-",
+        input_value={
+            "specification": {
+                "summary": "Task API plan",
+                "architecturalSummary": "Keep operations storage-independent.",
+                "keyDesignDecisions": [],
+                "apiContracts": [],
+                "databaseSchema": [],
+                "uiComponents": [],
+                "testingRequirements": [],
+                "crossTaskIntegrationPoints": [],
+                "openQuestionsAndRisks": []
+            },
+            "tasks": [
+                {
+                    "id": "python-work-items",
+                    "owner": "software-engineer",
+                    "scope": "Implement task commands.",
+                    "acceptanceCriteriaCovered": ["00001-1.1"]
+                }
+            ]
+        },
+    )
+    assert add_spec.returncode == 0
+
+    task = run_cli(board, "get_task", "00001-1", "python-work-items")
+    assert task.returncode == 0
+    assert response(task)["data"]["id"] == "python-work-items"
+
+    activity = run_cli(
+        board,
+        "record_activity",
+        "00001-1",
+        "python-work-items",
+        "--input",
+        "-",
+        input_value={
+            "agent": "software-engineer",
+            "technology": "python",
+            "outcome": "implemented",
+            "artifact": "board/00001/chunks/python-work-items/changelog.1.md",
+            "filesChanged": ["tools/work_items/cli.py"],
+            "nextOwner": "quality-assurance-engineer"
+        },
+    )
+    assert activity.returncode == 0
+    data = response(activity)["data"]
+    assert data["state"] == "implemented"
+    assert data["history"][0]["iteration"] == 1

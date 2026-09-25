@@ -34,4 +34,4 @@ Turn an initial request into one or more approved `new` work items that are read
 
 ## Handoff
 
-Created work items have status `new` and are ready for ingestion into the ADLC process flows. For `user-story` and `chore` items, the service initializes `specification` to `null` for later architect population.
+Created work items have status `new` and are ready for ingestion into the ADLC process flows. For `user-story` and `chore` items, the service initializes `specification` to `null` for later architect population. All work items initialize `tasks` as an empty array for later task authoring.

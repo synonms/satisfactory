@@ -7,6 +7,8 @@ from typing import Any, TypeAlias
 
 WorkItem: TypeAlias = dict[str, Any]
 Specification: TypeAlias = dict[str, Any]
+Task: TypeAlias = dict[str, Any]
+TaskActivity: TypeAlias = dict[str, Any]
 
 class WorkItemType(str, Enum):
     USER_STORY = "user-story"
@@ -23,6 +25,24 @@ class WorkItemStatus(str, Enum):
 class SpecificationStatus(str, Enum):
     DRAFT = "draft"
     APPROVED = "approved"
+
+
+class TaskState(str, Enum):
+    NOT_STARTED = "not-started"
+    IMPLEMENTED = "implemented"
+    TESTS_PASSING = "tests-passing"
+    TESTS_FAILING = "tests-failing"
+    BLOCKED = "blocked"
+
+
+class TaskOutcome(str, Enum):
+    IMPLEMENTED = "implemented"
+    PASSED = "passed"
+    FAILED = "failed"
+    BLOCKED = "blocked"
+    VALIDATION_PASSED = "Passed"
+    VALIDATION_FAILED = "Failed"
+    VALIDATION_BLOCKED = "Blocked"
 
 
 class WorkItemError(Exception):
@@ -51,3 +71,11 @@ class SpecificationNotFoundError(WorkItemError):
 
 class SpecificationConflictError(WorkItemError):
     code = "conflict"
+
+
+class TaskValidationError(WorkItemError):
+    code = "validation_error"
+
+
+class TaskNotFoundError(WorkItemError):
+    code = "not_found"

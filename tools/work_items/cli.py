@@ -60,6 +60,15 @@ def build_parser() -> argparse.ArgumentParser:
     approve_spec = commands.add_parser("approve_spec", aliases=["approve-spec"])
     approve_spec.add_argument("work_item_id")
 
+    get_task = commands.add_parser("get_task", aliases=["get-task"])
+    get_task.add_argument("work_item_id")
+    get_task.add_argument("task_id")
+
+    record_activity = commands.add_parser("record_activity", aliases=["record-activity"])
+    record_activity.add_argument("work_item_id")
+    record_activity.add_argument("task_id")
+    record_activity.add_argument("--input", default="-")
+
     return parser
 
 
@@ -90,18 +99,47 @@ def main(argv: list[str] | None = None) -> int:
                 from .models import SpecificationValidationError
 
                 raise SpecificationValidationError("Creation input must be a JSON object")
-            result: Any = service.add_spec(arguments.work_item_id, payload)
+            specification = payload.get("specification")
+            tasks = payload.get("tasks")
+            if not isinstance(specification, dict):
+                from .models import SpecificationValidationError
+
+                raise SpecificationValidationError("'specification' must be a JSON object")
+            if not isinstance(tasks, list):
+                from .models import TaskValidationError
+
+                raise TaskValidationError("'tasks' must be a JSON array")
+            result = service.add_spec(arguments.work_item_id, specification, tasks)
         elif arguments.command == "revise_spec":
             payload = _read_input(arguments.input)
             if not isinstance(payload, dict):
                 from .models import SpecificationValidationError
 
                 raise SpecificationValidationError("Revise input must be a JSON object")
-            result: Any = service.revise_spec(arguments.work_item_id, payload)
+            specification = payload.get("specification")
+            tasks = payload.get("tasks")
+            if not isinstance(specification, dict):
+                from .models import SpecificationValidationError
+
+                raise SpecificationValidationError("'specification' must be a JSON object")
+            if not isinstance(tasks, list):
+                from .models import TaskValidationError
+
+                raise TaskValidationError("'tasks' must be a JSON array")
+            result = service.revise_spec(arguments.work_item_id, specification, tasks)
         elif arguments.command in {"get_spec", "get-spec"}:
             result = service.get_spec(arguments.work_item_id)
         elif arguments.command in {"approve_spec", "approve-spec"}:
             result = service.approve_spec(arguments.work_item_id)
+        elif arguments.command in {"get_task", "get-task"}:
+            result = service.get_task(arguments.work_item_id, arguments.task_id)
+        elif arguments.command in {"record_activity", "record-activity"}:
+            payload = _read_input(arguments.input)
+            if not isinstance(payload, dict):
+                from .models import TaskValidationError
+
+                raise TaskValidationError("record_activity input must be a JSON object")
+            result = service.record_activity(arguments.work_item_id, arguments.task_id, payload)
         else:
             from .models import SpecificationValidationError
             raise SpecificationValidationError(f"Unknown command: {arguments.command}")

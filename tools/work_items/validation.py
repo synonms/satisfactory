@@ -12,6 +12,7 @@ from .models import WorkItemValidationError
 
 WORK_ITEM_SCHEMA_PATH = Path(__file__).parents[2] / ".agents/schemas/work-item.schema.json"
 SPECIFICATION_SCHEMA_PATH = Path(__file__).parents[2] / ".agents/schemas/specification.schema.json"
+TASK_SCHEMA_PATH = Path(__file__).parents[2] / ".agents/schemas/task.schema.json"
 
 class Validator:
     def __init__(self, schema_path: Path) -> None:
@@ -46,3 +47,8 @@ class WorkItemValidator(Validator):
 class SpecificationValidator(Validator):
     def __init__(self) -> None:
         super().__init__(SPECIFICATION_SCHEMA_PATH)
+
+
+class TaskValidator(Validator):
+    def __init__(self) -> None:
+        super().__init__(TASK_SCHEMA_PATH)

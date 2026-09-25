@@ -4,7 +4,7 @@
   "description": "A structured representation of a work item",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "type", "created", "status", "request", "description"],
+  "required": ["id", "type", "created", "status", "request", "description", "tasks"],
   "properties": {
     "id": {
       "type": "string",
@@ -40,6 +40,13 @@
       "type": "string",
       "minLength": 1,
       "description": "Detailed description of the work item"
+    },
+    "tasks": {
+      "type": "array",
+      "description": "First-class implementation tasks and task activity history for this work item.",
+      "items": {
+        "$ref": "task.schema.json"
+      }
     },
     "acceptanceCriteria": {
       "type": "array",

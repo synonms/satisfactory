@@ -6,6 +6,7 @@ import pytest
 from tools.work_items.json_repository import JsonFileWorkItemRepository
 from tools.work_items.models import (
     SpecificationValidationError,
+    TaskValidationError,
     WorkItemConflictError,
     WorkItemStatus,
     WorkItemValidationError,
@@ -38,17 +39,20 @@ def specification() -> dict:
         "databaseSchema": [],
         "uiComponents": [],
         "testingRequirements": [],
-        "tasks": [
-            {
-                "id": "python-work-items",
-                "owner": "software-engineer",
-                "scope": "Implement the specification commands.",
-                "acceptanceCriteriaCovered": ["00001-1.1"],
-            }
-        ],
         "crossTaskIntegrationPoints": [],
         "openQuestionsAndRisks": [],
     }
+
+
+def tasks() -> list[dict]:
+    return [
+        {
+            "id": "python-work-items",
+            "owner": "software-engineer",
+            "scope": "Implement the specification commands.",
+            "acceptanceCriteriaCovered": ["00001-1.1"],
+        }
+    ]
 
 
 def test_create_request_assigns_stable_ids_and_persists_json(tmp_path: Path) -> None:
@@ -119,14 +123,40 @@ def test_specification_lifecycle_for_user_story(tmp_path: Path) -> None:
     manager = service(tmp_path / "board")
     work_item_id = manager.create_request([story()])[0]["id"]
 
-    created = manager.add_spec(work_item_id, specification())
+    created = manager.add_spec(work_item_id, specification(), tasks())
     fetched = manager.get_spec(work_item_id)
     approved = manager.approve_spec(work_item_id)
+    task = manager.get_task(work_item_id, "python-work-items")
+    updated_task = manager.record_activity(
+        work_item_id,
+        "python-work-items",
+        {
+            "agent": "software-engineer",
+            "technology": "python",
+            "outcome": "implemented",
+            "result": "implemented",
+            "artifact": "board/00001/chunks/python-work-items/changelog.1.md",
+            "filesChanged": ["tools/work_items/service.py"],
+            "nextOwner": "quality-assurance-engineer",
+            "metrics": {
+                "durationSeconds": 10,
+                "inputTokens": 10,
+                "outputTokens": 5,
+                "totalTokens": 15,
+                "model": "gpt-5.3-codex",
+                "estimatedCostUsd": 0.01,
+            },
+        },
+    )
 
     assert created["workItemId"] == work_item_id
     assert created["status"] == "draft"
     assert fetched == created
     assert approved["status"] == "approved"
+    assert task["state"] == "not-started"
+    assert updated_task["state"] == "implemented"
+    assert updated_task["implementAttempts"] == 1
+    assert updated_task["history"][0]["iteration"] == 1
 
 
 def test_specification_commands_reject_non_story_types(tmp_path: Path) -> None:
@@ -145,4 +175,12 @@ def test_specification_commands_reject_non_story_types(tmp_path: Path) -> None:
     )[0]["id"]
 
     with pytest.raises(SpecificationValidationError):
-        manager.add_spec(work_item_id, specification())
+        manager.add_spec(work_item_id, specification(), tasks())
+
+
+def test_add_spec_requires_tasks(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+
+    with pytest.raises(TaskValidationError):
+        manager.add_spec(work_item_id, specification(), [])

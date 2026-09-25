@@ -22,7 +22,11 @@ from .models import (
     Specification,
     SpecificationConflictError,
     SpecificationNotFoundError,
-    SpecificationValidationError
+    SpecificationValidationError,
+    Task,
+    TaskActivity,
+    TaskNotFoundError,
+    TaskState,
 )
 from .repository import RequestFactory
 from .validation import WorkItemValidator, SpecificationValidator
@@ -86,9 +90,11 @@ class JsonFileWorkItemRepository:
             self._write_atomic(self._path_for(work_item_id), record)
             return record
 
-    def add_spec(self, work_item_id: str, specification: Specification) -> Specification:
+    def add_spec(self, work_item_id: str, specification: Specification, tasks: list[Task]) -> Specification:
         if not specification:
             raise SpecificationValidationError("'add_spec' requests must supply a specification")
+        if not tasks:
+            raise SpecificationValidationError("'add_spec' requests must supply at least one task")
         with self._lock():
             work_item = self.get(work_item_id)
             if "specification" not in work_item:
@@ -103,12 +109,16 @@ class JsonFileWorkItemRepository:
                 raise SpecificationValidationError("New specifications must have status 'draft'")
 
             work_item["specification"] = specification
+            work_item["tasks"] = tasks
+            self._work_item_validator.validate(work_item)
             self._write_atomic(self._path_for(work_item_id), work_item)
             return specification
 
-    def revise_spec(self, work_item_id: str, specification: Specification) -> Specification:
+    def revise_spec(self, work_item_id: str, specification: Specification, tasks: list[Task]) -> Specification:
         if not specification:
             raise SpecificationValidationError("'revise_spec' requests must supply a specification")
+        if not tasks:
+            raise SpecificationValidationError("'revise_spec' requests must supply at least one task")
         with self._lock():
             work_item = self.get(work_item_id)
             if "specification" not in work_item:
@@ -125,6 +135,8 @@ class JsonFileWorkItemRepository:
                 raise SpecificationValidationError("Revised specifications must have status 'draft'")
 
             work_item["specification"] = specification
+            work_item["tasks"] = tasks
+            self._work_item_validator.validate(work_item)
             self._write_atomic(self._path_for(work_item_id), work_item)
             return specification
 
@@ -162,6 +174,51 @@ class JsonFileWorkItemRepository:
             self._specification_validator.validate(specification)
             self._write_atomic(self._path_for(work_item_id), work_item)
             return specification
+
+
+    def get_task(self, work_item_id: str, task_id: str) -> Task:
+        work_item = self.get(work_item_id)
+        for task in work_item.get("tasks", []):
+            if task.get("id") == task_id:
+                return task
+        raise TaskNotFoundError(f"Task {task_id} was not found for work item {work_item_id}")
+
+
+    def record_activity(self, work_item_id: str, task_id: str, activity: TaskActivity) -> Task:
+        with self._lock():
+            work_item = self.get(work_item_id)
+            tasks = work_item.get("tasks", [])
+            for task in tasks:
+                if task.get("id") != task_id:
+                    continue
+
+                history = task.setdefault("history", [])
+                activity_entry = deepcopy(activity)
+                activity_entry["iteration"] = len(history) + 1
+                history.append(activity_entry)
+
+                outcome = activity_entry["outcome"]
+                if outcome == "implemented":
+                    task["state"] = TaskState.IMPLEMENTED.value
+                    task["implementAttempts"] = int(task.get("implementAttempts", 0)) + 1
+                elif outcome == "passed":
+                    task["state"] = TaskState.TESTS_PASSING.value
+                    task["testAttempts"] = int(task.get("testAttempts", 0)) + 1
+                elif outcome == "failed":
+                    task["state"] = TaskState.TESTS_FAILING.value
+                    task["testAttempts"] = int(task.get("testAttempts", 0)) + 1
+                elif outcome in {"blocked", "Blocked"}:
+                    task["state"] = TaskState.BLOCKED.value
+
+                artifact = activity_entry.get("artifact")
+                if artifact:
+                    task["latestArtifact"] = artifact
+
+                self._work_item_validator.validate(work_item)
+                self._write_atomic(self._path_for(work_item_id), work_item)
+                return task
+
+        raise TaskNotFoundError(f"Task {task_id} was not found for work item {work_item_id}")
 
 
     def _next_request_number(self) -> int:

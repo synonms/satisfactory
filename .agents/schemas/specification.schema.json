@@ -4,7 +4,7 @@
   "description": "A structured representation of a feature specification for a user story or chore work item",
   "type": "object",
   "additionalProperties": false,
-  "required": ["workItemId", "created", "status", "summary", "architecturalSummary", "tasks"],
+  "required": ["workItemId", "created", "status", "summary", "architecturalSummary"],
   "properties": {
     "workItemId": {
       "type": "string",
@@ -70,64 +70,6 @@
         "type": "string",
         "minLength": 1
       }
-    },
-    "tasks": {
-      "type": "array",
-      "description": "Tasks requiring implementation, generally split per technology/programming-language. Each task is handed to a specialised engineer agent.",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "Unique identifier of the task"
-          },
-          "owner": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Owner of the task, typically a specialised engineer agent"
-          },
-          "scope": {
-            "type": "string",
-            "minLength": 1,
-            "description": "What this task covers"
-          },
-          "affectedPaths": {
-            "type": "array",
-            "description": "Paths to projects/folders/files affected by the intended change",
-            "items": {
-                "type": "string",
-                "minLength": 1
-            }
-          },
-          "contracts": {
-            "type": "array",
-            "description": "Contracts produced/consumed - APIs, DTOs, events, schemas shared with other tasks.",
-            "items": {
-                "type": "string",
-                "minLength": 1
-            }
-          },
-          "dependencies": {
-            "type": "array",
-            "description": "Sequencing/dependencies - must run before/after which other chunk, if any.",
-            "items": {
-                "type": "string",
-                "minLength": 1
-            }
-          },
-          "acceptanceCriteriaCovered": {
-            "type": "array",
-            "description": "Acceptance criteria covered - identifiers from above.",
-            "items": {
-                "type": "string",
-                "minLength": 1
-            }
-          }
-        },
-        "required": ["id", "owner", "scope", "acceptanceCriteriaCovered"]
-      },
-      "minItems": 1
     },
     "crossTaskIntegrationPoints": {
       "type": "array",

@@ -49,7 +49,7 @@ Do not modify existing work items, move items between lifecycle folders, or crea
 
 ## 5. Report the result
 
-Report each created work-item ID, type, and request summary from the command result. State that the items are ready to enter the SDLC workflow. For any user story or chore work items, tell the user to run
+Report each created work-item ID, type, and request summary from the command result. State that the items are ready to enter the ADLC workflow. For any user story or chore work items, tell the user to run
 `.agents/prompts/satisfactory-design.prompt.md` against the selected work-item ID in a new chat session with a fresh context window.
 
 If creation is blocked, report the exact missing input or failed operation and leave already-created records untouched. Do not claim that an item is ready unless the command returned its required fields and `new` status.

@@ -4,7 +4,7 @@ This document defines the specification semantics and agent-facing operations fo
 
 ## Purpose
 
-A specification is the architectural design and implementation plan for a user story or chore work item. It captures design decisions and a discrete set of scoped tasks before the ADLC workflow creates implementation handoffs. Integration points denote how the tasks are then brought together into a coherent changeset.
+A specification is the architectural design and implementation plan for a user story or chore work item. It captures design decisions and integration points before the ADLC workflow creates implementation handoffs.
 
 Specifications are stored as the `specification` property nested inside a work-item document on the Kanban board. Agents should treat that as an adapter detail. The durable contract is the work-item identity, type, required fields, status values, and lifecycle transitions. A future store, such as SQLite, must preserve those semantics even if paths and filenames are replaced by queries and records.
 
@@ -39,7 +39,7 @@ The only allowed transition is `draft -> approved`. Once the specification is ap
 
 ## Tasks
 
-Tasks define the units of work required to implement the specification. A specification can be broken down into one or more tasks. Tasks can be split by technology stack/service layer (e.g. `dotnet-backend`, `react-frontend`) or vertical feature slice (e.g. `employees` and `contracts`). Multiple tasks should only be created if they are independent and can be implemented and unit tested in isolation from the other tasks (assuming dependencies completed). Tasks should be recorded in order of intended implementation and any dependencies recorded, for example `api-contract`, `web-api` (depends on `api-contract`), `ui` (depends on `api-contract`). Integration tests are implemented once all tasks are complete.
+Tasks are stored on the work item, not inside the specification document. Authoring rules, schema, and operations are defined in `.agents/resources/tasks.md`.
 
 ## Operations
 
@@ -54,7 +54,10 @@ python -m tools.work_items get_spec 00001-1
 python -m tools.work_items approve_spec 00001-1
 ```
 
-Creation input is a specification JSON object. Every item requires `summary`, `architecturalSummary` and `tasks`; `keyDesignDecisions` should be provided where important trade-offs exist. The arrays `apiContracts`, `databaseSchema`, `uiComponents`, `testingRequirements`, `crossTaskIntegrationPoints` and `openQuestionsAndRisks` should be populated where relevant to the implementation, otherwise passed as an empty array. `tasks` is required and is a list of all implementation work to be carried out. Each task must be given a unique kebab case identifier which succinctly describes the task, e.g. `dotnet-api`. Do not provide `workItemId`, `created`, or `status`; those are service-owned fields.
+Creation input for `add_spec` and `revise_spec` is a JSON object with two properties:
+
+- `specification`: The specification JSON object. Every item requires `summary` and `architecturalSummary`. `keyDesignDecisions` should be provided where important trade-offs exist. The arrays `apiContracts`, `databaseSchema`, `uiComponents`, `testingRequirements`, `crossTaskIntegrationPoints` and `openQuestionsAndRisks` should be populated where relevant to the implementation, otherwise passed as an empty array. Do not provide `workItemId`, `created`, or `status`; those are service-owned fields.
+- `tasks`: A non-empty array of task objects as defined in `.agents/schemas/task.schema.json`.
 
 Software Architect may call `add_spec`, `revise_spec`, `get-spec` and `approve-spec`. Other agents may call `get_spec` only.
 

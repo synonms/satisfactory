@@ -18,6 +18,7 @@ def work_item(item_type: str) -> dict:
         "status": "new",
         "request": "Manage work items through code",
         "description": "Provide a storage-independent work-item service.",
+        "tasks": [],
     }
     if item_type in {"user-story", "chore"}:
         item["acceptanceCriteria"] = [

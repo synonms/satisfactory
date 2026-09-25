@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy
 from datetime import date
+from datetime import datetime, timezone
 from typing import Any
 
 from .models import (
@@ -16,10 +17,15 @@ from .models import (
     Specification,
     SpecificationConflictError,
     SpecificationStatus,
-    SpecificationValidationError
+    SpecificationValidationError,
+    Task,
+    TaskActivity,
+    TaskOutcome,
+    TaskState,
+    TaskValidationError,
 )
 from .repository import WorkItemRepository
-from .validation import WorkItemValidator, SpecificationValidator
+from .validation import WorkItemValidator, SpecificationValidator, TaskValidator
 
 WORK_ITEM_COMMON_INPUT_FIELDS = {"type", "request", "description", "source"}
 WORK_ITEM_TYPE_INPUT_FIELDS = {
@@ -42,9 +48,33 @@ SPECIFICATION_COMMON_INPUT_FIELDS = {
     "databaseSchema",
     "uiComponents",
     "testingRequirements",
-    "tasks",
     "crossTaskIntegrationPoints",
     "openQuestionsAndRisks",
+}
+TASK_COMMON_INPUT_FIELDS = {
+    "id",
+    "owner",
+    "scope",
+    "affectedPaths",
+    "contracts",
+    "dependencies",
+    "acceptanceCriteriaCovered",
+    "state",
+    "implementAttempts",
+    "testAttempts",
+    "lastFailureSignature",
+    "latestArtifact",
+    "history",
+}
+ACTIVITY_COMMON_INPUT_FIELDS = {
+    "agent",
+    "technology",
+    "outcome",
+    "result",
+    "artifact",
+    "filesChanged",
+    "nextOwner",
+    "metrics",
 }
 SPECIFICATION_TRANSITIONS = {
     SpecificationStatus.DRAFT: {SpecificationStatus.APPROVED},
@@ -57,11 +87,13 @@ class WorkItemService:
         repository: WorkItemRepository,
         work_item_validator: WorkItemValidator | None = None,
         specification_validator: SpecificationValidator | None = None,
+        task_validator: TaskValidator | None = None,
         today: Callable[[], date] = date.today,
     ) -> None:
         self._repository = repository
         self._work_item_validator = work_item_validator or WorkItemValidator()
         self._specification_validator = specification_validator or SpecificationValidator()
+        self._task_validator = task_validator or TaskValidator()
         self._today = today
 
 
@@ -123,10 +155,13 @@ class WorkItemService:
         return self.update_status(work_item_id, new_status)
 
 
-    def add_spec(self, work_item_id: str, input: Mapping[str, Any]) -> Specification:
+    def add_spec(self, work_item_id: str, input: Mapping[str, Any], tasks_input: Sequence[Mapping[str, Any]]) -> Specification:
         if not input:
             raise SpecificationValidationError("'add_spec' request must contain a specification")
+        if not tasks_input:
+            raise TaskValidationError("'add_spec' request must contain at least one task")
         normalized = deepcopy(dict(input))  # type: ignore
+        normalized_tasks = [deepcopy(dict(task)) for task in tasks_input]
 
         work_item = self.get(work_item_id)
         if work_item["type"] not in {WorkItemType.USER_STORY.value, WorkItemType.CHORE.value}:
@@ -135,14 +170,18 @@ class WorkItemService:
             )
 
         specification = self._build_specification(work_item_id, normalized)
+        tasks = self._build_tasks(work_item, normalized_tasks)
 
-        return self._repository.add_spec(work_item_id, specification)
+        return self._repository.add_spec(work_item_id, specification, tasks)
 
 
-    def revise_spec(self, work_item_id: str, input: Mapping[str, Any]) -> Specification:
+    def revise_spec(self, work_item_id: str, input: Mapping[str, Any], tasks_input: Sequence[Mapping[str, Any]]) -> Specification:
         if not input:
             raise SpecificationValidationError("'revise_spec' request must contain a specification")
+        if not tasks_input:
+            raise TaskValidationError("'revise_spec' request must contain at least one task")
         normalized = deepcopy(dict(input))  # type: ignore
+        normalized_tasks = [deepcopy(dict(task)) for task in tasks_input]
 
         work_item = self.get(work_item_id)
         if work_item["type"] not in {WorkItemType.USER_STORY.value, WorkItemType.CHORE.value}:
@@ -151,8 +190,9 @@ class WorkItemService:
             )
 
         specification = self._build_specification(work_item_id, normalized)
+        tasks = self._build_tasks(work_item, normalized_tasks)
 
-        return self._repository.revise_spec(work_item_id, specification)
+        return self._repository.revise_spec(work_item_id, specification, tasks)
 
 
     def get_spec(self, work_item_id: str) -> Specification:
@@ -183,6 +223,25 @@ class WorkItemService:
         return self._repository.approve_spec(work_item_id)
 
 
+    def get_task(self, work_item_id: str, task_id: str) -> Task:
+        if not task_id:
+            raise TaskValidationError("task_id must be a non-empty string")
+        return self._repository.get_task(work_item_id, task_id)
+
+
+    def record_activity(
+        self,
+        work_item_id: str,
+        task_id: str,
+        input: Mapping[str, Any],
+    ) -> Task:
+        if not input:
+            raise TaskValidationError("'record_activity' request must contain an activity payload")
+        normalized = deepcopy(dict(input))  # type: ignore
+        activity = self._build_activity(normalized)
+        return self._repository.record_activity(work_item_id, task_id, activity)
+
+
 
     def _build_work_item(self, request_id: str, sequence: int, item: dict[str, Any]) -> WorkItem:
         try:
@@ -207,6 +266,8 @@ class WorkItemService:
         for field in ("request", "description", "source"):
             if field in item:
                 record[field] = item[field]
+
+        record["tasks"] = []
 
         if item_type in {WorkItemType.USER_STORY, WorkItemType.CHORE}:
             criteria = item.get("acceptanceCriteria")
@@ -236,9 +297,106 @@ class WorkItemService:
             "created": self._today().isoformat(),
             "status": SpecificationStatus.DRAFT.value
         }
-        for field in ("summary", "architecturalSummary", "keyDesignDecisions", "apiContracts", "databaseSchema", "uiComponents", "testingRequirements", "tasks", "crossTaskIntegrationPoints", "openQuestionsAndRisks"):
+        for field in ("summary", "architecturalSummary", "keyDesignDecisions", "apiContracts", "databaseSchema", "uiComponents", "testingRequirements", "crossTaskIntegrationPoints", "openQuestionsAndRisks"):
             if field in item:
                 record[field] = item[field]
 
         self._specification_validator.validate(record)
         return record
+
+
+    def _build_tasks(self, work_item: WorkItem, items: Sequence[dict[str, Any]]) -> list[Task]:
+        if not items:
+            raise TaskValidationError("At least one task is required")
+
+        task_ids: set[str] = set()
+        tasks: list[Task] = []
+        for item in items:
+            allowed = TASK_COMMON_INPUT_FIELDS
+            unexpected = sorted(set(item) - allowed)
+            if unexpected:
+                raise TaskValidationError(
+                    f"Task input contains unsupported fields: {', '.join(unexpected)}"
+                )
+
+            task_id = item.get("id")
+            if not isinstance(task_id, str) or not task_id:
+                raise TaskValidationError("Each task must include a non-empty string id")
+            if task_id in task_ids:
+                raise TaskValidationError(f"Duplicate task id: {task_id}")
+            task_ids.add(task_id)
+
+            task: Task = {
+                "id": task_id,
+                "owner": item.get("owner", "software-engineer"),
+                "scope": item.get("scope", ""),
+                "affectedPaths": item.get("affectedPaths", []),
+                "contracts": item.get("contracts", []),
+                "dependencies": item.get("dependencies", []),
+                "acceptanceCriteriaCovered": item.get("acceptanceCriteriaCovered", []),
+                "state": item.get("state", TaskState.NOT_STARTED.value),
+                "implementAttempts": item.get("implementAttempts", 0),
+                "testAttempts": item.get("testAttempts", 0),
+                "lastFailureSignature": item.get("lastFailureSignature"),
+                "latestArtifact": item.get("latestArtifact"),
+                "history": item.get("history", []),
+            }
+
+            self._task_validator.validate(task)
+            tasks.append(task)
+
+        if work_item["type"] in {WorkItemType.USER_STORY.value, WorkItemType.CHORE.value}:
+            known_criteria = {
+                criterion["id"]
+                for criterion in work_item.get("acceptanceCriteria", [])
+                if isinstance(criterion, Mapping) and "id" in criterion
+            }
+            for task in tasks:
+                unknown = sorted(set(task.get("acceptanceCriteriaCovered", [])) - known_criteria)
+                if unknown:
+                    raise TaskValidationError(
+                        "Task references unknown acceptance criteria: "
+                        + ", ".join(unknown)
+                    )
+
+        return tasks
+
+
+    def _build_activity(self, item: dict[str, Any]) -> TaskActivity:
+        allowed = ACTIVITY_COMMON_INPUT_FIELDS
+        unexpected = sorted(set(item) - allowed)
+        if unexpected:
+            raise TaskValidationError(
+                f"Activity input contains unsupported fields: {', '.join(unexpected)}"
+            )
+
+        agent = item.get("agent")
+        outcome = item.get("outcome")
+        next_owner = item.get("nextOwner")
+        if not isinstance(agent, str) or not agent:
+            raise TaskValidationError("Activity requires a non-empty 'agent'")
+        if not isinstance(outcome, str) or not outcome:
+            raise TaskValidationError("Activity requires a non-empty 'outcome'")
+        if not isinstance(next_owner, str) or not next_owner:
+            raise TaskValidationError("Activity requires a non-empty 'nextOwner'")
+
+        try:
+            parsed_outcome = TaskOutcome(outcome)
+        except ValueError as error:
+            raise TaskValidationError(f"Unsupported task activity outcome: {outcome}") from error
+
+        activity: TaskActivity = {
+            "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "iteration": 0,
+            "agent": agent,
+            "outcome": parsed_outcome.value,
+            "result": item.get("result", parsed_outcome.value),
+            "artifact": item.get("artifact"),
+            "filesChanged": item.get("filesChanged", []),
+            "nextOwner": next_owner,
+        }
+        if "technology" in item:
+            activity["technology"] = item["technology"]
+        if "metrics" in item:
+            activity["metrics"] = item["metrics"]
+        return activity

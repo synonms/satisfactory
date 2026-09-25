@@ -1,0 +1,198 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Task",
+  "description": "A task is the first-class unit of execution in the ADLC workflow.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "owner",
+    "scope",
+    "acceptanceCriteriaCovered",
+    "state",
+    "implementAttempts",
+    "testAttempts",
+    "lastFailureSignature",
+    "latestArtifact",
+    "history"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "description": "Unique task identifier in kebab-case."
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Owning agent for this task."
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Implementation scope covered by the task."
+    },
+    "affectedPaths": {
+      "type": "array",
+      "description": "Paths to projects/folders/files affected by this task.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "contracts": {
+      "type": "array",
+      "description": "Contracts produced/consumed by this task.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "Task IDs that this task depends on.",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      },
+      "uniqueItems": true
+    },
+    "acceptanceCriteriaCovered": {
+      "type": "array",
+      "description": "Acceptance criteria IDs or requirement IDs fulfilled by this task.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "state": {
+      "type": "string",
+      "enum": ["not-started", "implemented", "tests-passing", "tests-failing", "blocked"],
+      "description": "Current lifecycle state of the task."
+    },
+    "implementAttempts": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of implementation attempts recorded for this task."
+    },
+    "testAttempts": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of test attempts recorded for this task."
+    },
+    "lastFailureSignature": {
+      "type": ["string", "null"],
+      "description": "Signature of the last failing test set for no-progress detection."
+    },
+    "latestArtifact": {
+      "type": ["string", "null"],
+      "description": "Most recently produced handoff artifact path."
+    },
+    "history": {
+      "type": "array",
+      "description": "Chronological task activity and handoff history.",
+      "items": {
+        "$ref": "#/$defs/taskActivity"
+      }
+    }
+  },
+  "$defs": {
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "nonNegativeNumber": {
+      "type": "number",
+      "minimum": 0
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "durationSeconds",
+        "inputTokens",
+        "outputTokens",
+        "totalTokens",
+        "model",
+        "estimatedCostUsd"
+      ],
+      "properties": {
+        "durationSeconds": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "inputTokens": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "outputTokens": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "totalTokens": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimatedCostUsd": {
+          "$ref": "#/$defs/nonNegativeNumber"
+        }
+      }
+    },
+    "taskActivity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ts",
+        "iteration",
+        "agent",
+        "outcome",
+        "result",
+        "artifact",
+        "filesChanged",
+        "nextOwner"
+      ],
+      "properties": {
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "iteration": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "technology": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outcome": {
+          "type": "string",
+          "enum": ["implemented", "passed", "failed", "blocked", "Passed", "Failed", "Blocked"]
+        },
+        "result": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact": {
+          "type": ["string", "null"]
+        },
+        "filesChanged": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "nextOwner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "metrics": {
+          "$ref": "#/$defs/metrics"
+        }
+      }
+    }
+  }
+}
