@@ -6,14 +6,17 @@
   "additionalProperties": false,
   "required": [
     "id",
+    "phase",
     "owner",
     "scope",
     "acceptanceCriteriaCovered",
     "state",
-    "implementAttempts",
-    "testAttempts",
+    "attempts",
     "lastFailureSignature",
+    "previousFailureSignature",
     "latestArtifact",
+    "remediationTargetTaskId",
+    "blockedReason",
     "history"
   ],
   "properties": {
@@ -22,15 +25,55 @@
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
       "description": "Unique task identifier in kebab-case."
     },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "bug-repro",
+        "implementation",
+        "unit-test",
+        "integration-test",
+        "review",
+        "validation",
+        "documentation"
+      ],
+      "description": "ADLC phase this task belongs to. Determines the owner and the state machine."
+    },
     "owner": {
       "type": "string",
-      "minLength": 1,
-      "description": "Owning agent for this task."
+      "enum": [
+        "software-engineer",
+        "quality-assurance-engineer",
+        "reviewer",
+        "implementation-validator",
+        "documentation-writer"
+      ],
+      "description": "Owning agent for this task. Must match the owner mandated by the phase."
     },
     "scope": {
       "type": "string",
       "minLength": 1,
-      "description": "Implementation scope covered by the task."
+      "description": "Scope covered by the task."
+    },
+    "deliverables": {
+      "type": "array",
+      "description": "Concrete outputs the owning agent must produce.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "verification": {
+      "type": "array",
+      "description": "Evidence, scenarios, or commands that demonstrate this task is complete.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "technology": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Technology context used to select rules and resources, for example 'dotnet'."
     },
     "affectedPaths": {
       "type": "array",
@@ -50,7 +93,7 @@
     },
     "dependencies": {
       "type": "array",
-      "description": "Task IDs that this task depends on.",
+      "description": "Task IDs that must reach a terminal success state before this task can start.",
       "items": {
         "type": "string",
         "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
@@ -67,35 +110,117 @@
     },
     "state": {
       "type": "string",
-      "enum": ["not-started", "implemented", "tests-passing", "tests-failing", "blocked"],
-      "description": "Current lifecycle state of the task."
+      "enum": [
+        "not-started",
+        "in-progress",
+        "implemented",
+        "rework-required",
+        "tests-passing",
+        "tests-failing",
+        "approved",
+        "changes-requested",
+        "validated",
+        "rejected",
+        "documented",
+        "blocked"
+      ],
+      "description": "Current lifecycle state. The legal subset is constrained by the task phase."
     },
-    "implementAttempts": {
+    "attempts": {
       "type": "integer",
       "minimum": 0,
-      "description": "Number of implementation attempts recorded for this task."
-    },
-    "testAttempts": {
-      "type": "integer",
-      "minimum": 0,
-      "description": "Number of test attempts recorded for this task."
+      "description": "Number of owner attempts recorded for this task."
     },
     "lastFailureSignature": {
       "type": ["string", "null"],
       "description": "Signature of the last failing test set for no-progress detection."
     },
+    "previousFailureSignature": {
+      "type": ["string", "null"],
+      "description": "Signature of the prior failing test set. Two identical signatures mean no progress."
+    },
     "latestArtifact": {
       "type": ["string", "null"],
       "description": "Most recently produced handoff artifact path."
     },
+    "remediationTargetTaskId": {
+      "type": ["string", "null"],
+      "description": "Task that must be reworked as a result of this task's latest outcome."
+    },
+    "blockedReason": {
+      "type": ["string", "null"],
+      "description": "Why this task is blocked. Null unless the state is 'blocked'."
+    },
     "history": {
       "type": "array",
-      "description": "Chronological task activity and handoff history.",
+      "description": "Chronological task activity history. Retries append entries; they never create new tasks.",
       "items": {
         "$ref": "#/$defs/taskActivity"
       }
     }
   },
+  "allOf": [
+    {
+      "if": { "properties": { "phase": { "const": "implementation" } }, "required": ["phase"] },
+      "then": {
+        "properties": {
+          "owner": { "const": "software-engineer" },
+          "state": {
+            "enum": ["not-started", "in-progress", "implemented", "rework-required", "blocked"]
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "phase": { "const": "documentation" } }, "required": ["phase"] },
+      "then": {
+        "properties": {
+          "owner": { "const": "documentation-writer" },
+          "state": {
+            "enum": ["not-started", "in-progress", "documented", "rework-required", "blocked"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "phase": { "enum": ["bug-repro", "unit-test", "integration-test"] }
+        },
+        "required": ["phase"]
+      },
+      "then": {
+        "properties": {
+          "owner": { "const": "quality-assurance-engineer" },
+          "state": {
+            "enum": ["not-started", "in-progress", "tests-passing", "tests-failing", "blocked"]
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "phase": { "const": "review" } }, "required": ["phase"] },
+      "then": {
+        "properties": {
+          "owner": { "const": "reviewer" },
+          "state": {
+            "enum": ["not-started", "in-progress", "approved", "changes-requested", "blocked"]
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "phase": { "const": "validation" } }, "required": ["phase"] },
+      "then": {
+        "properties": {
+          "owner": { "const": "implementation-validator" },
+          "state": {
+            "enum": ["not-started", "in-progress", "validated", "rejected", "blocked"]
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "nonNegativeInteger": {
       "type": "integer",
@@ -149,7 +274,7 @@
         "result",
         "artifact",
         "filesChanged",
-        "nextOwner"
+        "metrics"
       ],
       "properties": {
         "ts": {
@@ -169,7 +294,17 @@
         },
         "outcome": {
           "type": "string",
-          "enum": ["implemented", "passed", "failed", "blocked", "Passed", "Failed", "Blocked"]
+          "enum": [
+            "implemented",
+            "documented",
+            "passed",
+            "failed",
+            "approved",
+            "changes-requested",
+            "validated",
+            "rejected",
+            "blocked"
+          ]
         },
         "result": {
           "type": "string",
@@ -185,9 +320,8 @@
             "minLength": 1
           }
         },
-        "nextOwner": {
-          "type": "string",
-          "minLength": 1
+        "remediationTargetTaskId": {
+          "type": ["string", "null"]
         },
         "metrics": {
           "$ref": "#/$defs/metrics"

@@ -6,42 +6,58 @@ If the request is not carried out by the custom agent and instead the general ag
 
 _Create work items for the following request: "{REQUEST}". Do not carry out implementation. Use the create-work-item workflow and work-item CLI._
 
-## Step 2 — advance one work item (repeat until terminal)
+## Step 2 — author and approve the task plan (once per work item)
 
-Open a new chat and run the dispatcher against a work item id:
+Open a new chat, select the `software-architect` agent, and run:
 
-`/next 00001-1`
+`Follow .agents/prompts/satisfactory-design.prompt.md for work item 00001-1`
 
-In a harness without slash-command support, paste this instead:
+Every work-item type goes through this step. For a user story or chore the architect writes an architectural specification alongside the tasks. For a bug or documentation item it writes tasks only — those types have no specification by design.
 
-`Follow .agents/prompts/next.prompt.md for work item 00001-1`
+Review the proposed plan and approve it explicitly. Approval sets `planStatus` to `approved`, and nothing can be dispatched until it is.
 
-It reports the current state, the failsafe check, which agent to run next, and a block of opening instruction text. Then:
+## Step 3 — advance one work item (repeat until terminal)
+
+Open a new chat, select the `orchestrator` agent, and run:
+
+`Follow .agents/prompts/satisfactory-implement.prompt.md for work item 00001-1`
+
+The orchestrator asks `python -m tools.adlc next 00001-1` what happens next and reports the task, its owner, and the opening instruction. Then:
 
 1. Open another new chat and select the agent it named.
 2. Paste the opening instruction block verbatim.
-3. Let that agent finish and write its artifact.
-4. Go back to step 2 with the dispatcher, which reads the new artifact, applies the transition, and tells you the next step.
+3. Let that agent finish and record its outcome with `record_activity`.
+4. Go back to step 3, and the orchestrator asks the router for the next task.
 
-Every step gets its own session, which is what keeps the context window fresh. You stop when the dispatcher reports `ready-for-user` or `blocked`.
+Every step gets its own session, which is what keeps the context window fresh. You stop when the router reports `ready-for-user` or `block`.
 
-You are asked to intervene at exactly two points: approving the specification (`specification-draft → specification-approved`), and final verification at `ready-for-user`.
+To see where a work item is at any time:
+
+`python -m tools.adlc status 00001-1`
+
+## Human gates
+
+You are asked to intervene at exactly two points:
+
+1. **Plan approval** — `planStatus` `draft → approved`, for every work-item type.
+2. **Final acceptance** — at `ready-for-user`, after every task has succeeded.
 
 On final approval, the work-item status changes to `done`. If there are issues with the implementation, the practical wording for a valid remediation request is:
 
 ```
 Request remediation: [requirement text or acceptance-criterion identifier] is not met.
 Evidence: [brief observed behavior].
-Owning chunk: [chunk id]  # flow 1 only
+Owning task: [task id]
 ```
 
-Any remediation requested which is out of scope of the original specification will be rejected - a new work item should be raised to address it.
+Any remediation requested which is out of scope of the original work item or approved specification will be rejected - a new work item should be raised to address it.
 
-### First run for a work item
-The dispatcher notices there is no `handoffs/00001-1/state.json`, reads the ticket type, derives the flow, and creates the state file at the flow entry point — so for a user story your first real step will be `software-architect`. You do not need to create anything by hand.
+## How the loop terminates
+
+Routing is not a judgement call. `tools/adlc/routing.py` picks the first task whose dependencies have all succeeded, and `tools/adlc/policy.py` enforces the attempt caps, loop caps, run budget, no-progress detection, and ownership guard. Both are unit tested under `tests/adlc`, which is the actual guarantee that a remediation loop cannot run forever.
 
 ### VS Code setup
-`.agents` is not a location VS Code scans by default. `.vscode/settings.json` registers it, so the agents appear in the agent picker and the dispatcher is available as `/next`:
+`.agents` is not a location VS Code scans by default. `.vscode/settings.json` registers it, so the agents appear in the agent picker and the prompts are available as slash commands:
 
 ```json
 {

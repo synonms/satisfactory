@@ -27,22 +27,46 @@ class SpecificationStatus(str, Enum):
     APPROVED = "approved"
 
 
+class PlanStatus(str, Enum):
+    DRAFT = "draft"
+    APPROVED = "approved"
+
+
+class TaskPhase(str, Enum):
+    BUG_REPRO = "bug-repro"
+    IMPLEMENTATION = "implementation"
+    UNIT_TEST = "unit-test"
+    INTEGRATION_TEST = "integration-test"
+    REVIEW = "review"
+    VALIDATION = "validation"
+    DOCUMENTATION = "documentation"
+
+
 class TaskState(str, Enum):
     NOT_STARTED = "not-started"
+    IN_PROGRESS = "in-progress"
     IMPLEMENTED = "implemented"
+    REWORK_REQUIRED = "rework-required"
     TESTS_PASSING = "tests-passing"
     TESTS_FAILING = "tests-failing"
+    APPROVED = "approved"
+    CHANGES_REQUESTED = "changes-requested"
+    VALIDATED = "validated"
+    REJECTED = "rejected"
+    DOCUMENTED = "documented"
     BLOCKED = "blocked"
 
 
 class TaskOutcome(str, Enum):
     IMPLEMENTED = "implemented"
+    DOCUMENTED = "documented"
     PASSED = "passed"
     FAILED = "failed"
+    APPROVED = "approved"
+    CHANGES_REQUESTED = "changes-requested"
+    VALIDATED = "validated"
+    REJECTED = "rejected"
     BLOCKED = "blocked"
-    VALIDATION_PASSED = "Passed"
-    VALIDATION_FAILED = "Failed"
-    VALIDATION_BLOCKED = "Blocked"
 
 
 class WorkItemError(Exception):
@@ -71,6 +95,18 @@ class SpecificationNotFoundError(WorkItemError):
 
 class SpecificationConflictError(WorkItemError):
     code = "conflict"
+
+
+class PlanValidationError(WorkItemError):
+    code = "validation_error"
+
+
+class PlanConflictError(WorkItemError):
+    code = "conflict"
+
+
+class PlanNotFoundError(WorkItemError):
+    code = "not_found"
 
 
 class TaskValidationError(WorkItemError):

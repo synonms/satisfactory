@@ -12,7 +12,14 @@ from .models import (
 	SpecificationStatus,
 	SpecificationValidationError,
 	SpecificationNotFoundError,
-	SpecificationConflictError
+	SpecificationConflictError,
+	PlanConflictError,
+	PlanNotFoundError,
+	PlanStatus,
+	PlanValidationError,
+	TaskOutcome,
+	TaskPhase,
+	TaskState,
 )
 from .service import WorkItemService
 
@@ -29,5 +36,12 @@ __all__ = [
 	"SpecificationStatus",
 	"SpecificationValidationError",
 	"SpecificationNotFoundError",
-	"SpecificationConflictError"
+	"SpecificationConflictError",
+	"PlanConflictError",
+	"PlanNotFoundError",
+	"PlanStatus",
+	"PlanValidationError",
+	"TaskOutcome",
+	"TaskPhase",
+	"TaskState",
 ]

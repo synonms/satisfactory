@@ -5,6 +5,8 @@ import pytest
 
 from tools.work_items.json_repository import JsonFileWorkItemRepository
 from tools.work_items.models import (
+    PlanConflictError,
+    SpecificationValidationError,
     TaskValidationError,
     WorkItemConflictError,
     WorkItemStatus,
@@ -48,20 +50,72 @@ def specification() -> dict:
         "apiContracts": [],
         "databaseSchema": [],
         "uiComponents": [],
-        "testingRequirements": [],
         "crossTaskIntegrationPoints": [],
         "openQuestionsAndRisks": [],
+    }
+
+
+def metrics() -> dict:
+    return {
+        "durationSeconds": 10,
+        "inputTokens": 10,
+        "outputTokens": 5,
+        "totalTokens": 15,
+        "model": "gpt-5.3-codex",
+        "estimatedCostUsd": 0.01,
     }
 
 
 def tasks() -> list[dict]:
     return [
         {
-            "id": "python-work-items",
-            "owner": "software-engineer",
-            "scope": "Implement the specification commands.",
+            "id": "impl-work-items",
+            "phase": "implementation",
+            "scope": "Implement the plan commands.",
+            "technology": "python",
             "acceptanceCriteriaCovered": ["00001-1.1"],
-        }
+        },
+        {
+            "id": "unit-test-work-items",
+            "phase": "unit-test",
+            "scope": "Cover the plan commands.",
+            "dependencies": ["impl-work-items"],
+            "acceptanceCriteriaCovered": ["00001-1.2"],
+        },
+        {
+            "id": "review-work-items",
+            "phase": "review",
+            "scope": "Review the delivered change.",
+            "dependencies": ["unit-test-work-items"],
+        },
+        {
+            "id": "validate-work-items",
+            "phase": "validation",
+            "scope": "Validate against the specification.",
+            "dependencies": ["review-work-items"],
+        },
+    ]
+
+
+def bug_tasks() -> list[dict]:
+    return [
+        {
+            "id": "repro-failure",
+            "phase": "bug-repro",
+            "scope": "Write a failing reproduction test.",
+        },
+        {
+            "id": "fix-failure",
+            "phase": "implementation",
+            "scope": "Fix the defect.",
+            "dependencies": ["repro-failure"],
+        },
+        {
+            "id": "validate-failure",
+            "phase": "validation",
+            "scope": "Validate the fix.",
+            "dependencies": ["fix-failure"],
+        },
     ]
 
 
@@ -136,52 +190,185 @@ def test_specification_lifecycle_for_user_story(tmp_path: Path) -> None:
     work_item_id = manager.create_request([story()])[0]["id"]
 
     created = manager.add_spec(work_item_id, specification(), tasks())
-    fetched = manager.get_spec(work_item_id)
-    approved = manager.approve_spec(work_item_id)
-    task = manager.get_task(work_item_id, "python-work-items")
+    fetched = manager.get_plan(work_item_id)
+    approved = manager.approve_plan(work_item_id)
+    task = manager.get_task(work_item_id, "impl-work-items")
     updated_task = manager.record_activity(
         work_item_id,
-        "python-work-items",
+        "impl-work-items",
         {
             "agent": "software-engineer",
             "technology": "python",
             "outcome": "implemented",
             "result": "implemented",
-            "artifact": "board/00001/chunks/python-work-items/changelog.1.md",
+            "artifact": "board/00001/tasks/impl-work-items/changelog.1.md",
             "filesChanged": ["tools/work_items/service.py"],
-            "nextOwner": "quality-assurance-engineer",
-            "metrics": {
-                "durationSeconds": 10,
-                "inputTokens": 10,
-                "outputTokens": 5,
-                "totalTokens": 15,
-                "model": "gpt-5.3-codex",
-                "estimatedCostUsd": 0.01,
-            },
+            "metrics": metrics(),
         },
     )
 
-    assert created["workItemId"] == work_item_id
-    assert created["status"] == "draft"
+    assert created["planStatus"] == "draft"
+    assert created["specification"]["status"] == "draft"
     assert fetched == created
-    assert approved["status"] == "approved"
+    assert approved["planStatus"] == "approved"
+    assert approved["specification"]["status"] == "approved"
     assert task["state"] == "not-started"
+    assert task["owner"] == "software-engineer"
     assert updated_task["state"] == "implemented"
-    assert updated_task["implementAttempts"] == 1
+    assert updated_task["attempts"] == 1
     assert updated_task["history"][0]["iteration"] == 1
+    assert manager.get(work_item_id)["execution"]["totals"]["totalTokens"] == 15
 
 
-def test_specification_lifecycle_for_bug(tmp_path: Path) -> None:
+def test_bug_plan_has_no_specification(tmp_path: Path) -> None:
     manager = service(tmp_path / "board")
     work_item_id = manager.create_request([bug()])[0]["id"]
 
-    created = manager.add_spec(work_item_id, specification(), tasks())
-    fetched = manager.get_spec(work_item_id)
-    approved = manager.approve_spec(work_item_id)
+    created = manager.add_tasks(work_item_id, bug_tasks())
+    approved = manager.approve_plan(work_item_id)
 
-    assert created["workItemId"] == work_item_id
-    assert fetched == created
-    assert approved["status"] == "approved"
+    assert created["specification"] is None
+    assert approved["planStatus"] == "approved"
+    assert manager.get(work_item_id)["specification"] is None
+
+
+def test_specification_is_rejected_for_bug_and_documentation(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([bug()])[0]["id"]
+
+    with pytest.raises(SpecificationValidationError):
+        manager.add_spec(work_item_id, specification(), bug_tasks())
+
+
+def test_user_story_plan_requires_a_specification(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+
+    with pytest.raises(SpecificationValidationError):
+        manager.add_tasks(work_item_id, tasks())
+
+
+def test_review_tasks_are_rejected_for_bugs(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([bug()])[0]["id"]
+    plan = bug_tasks() + [
+        {"id": "review-fix", "phase": "review", "scope": "Review.", "dependencies": ["fix-failure"]}
+    ]
+
+    with pytest.raises(TaskValidationError):
+        manager.add_tasks(work_item_id, plan)
+
+
+def test_implementation_task_requires_a_downstream_review(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+    plan = [task for task in tasks() if task["phase"] != "review"]
+    plan[-1]["dependencies"] = ["unit-test-work-items"]
+
+    with pytest.raises(TaskValidationError):
+        manager.add_spec(work_item_id, specification(), plan)
+
+
+def test_plan_requires_a_validation_task(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+    plan = [task for task in tasks() if task["phase"] != "validation"]
+
+    with pytest.raises(TaskValidationError):
+        manager.add_spec(work_item_id, specification(), plan)
+
+
+def test_task_owner_must_match_the_phase(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+    plan = tasks()
+    plan[0]["owner"] = "reviewer"
+
+    with pytest.raises(TaskValidationError):
+        manager.add_spec(work_item_id, specification(), plan)
+
+
+def test_dependency_cycles_are_rejected(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+    plan = tasks()
+    plan[0]["dependencies"] = ["validate-work-items"]
+
+    with pytest.raises(TaskValidationError):
+        manager.add_spec(work_item_id, specification(), plan)
+
+
+def test_outcome_must_be_legal_for_the_task_phase(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+    manager.add_spec(work_item_id, specification(), tasks())
+    manager.approve_plan(work_item_id)
+
+    with pytest.raises(TaskValidationError):
+        manager.record_activity(
+            work_item_id,
+            "impl-work-items",
+            {
+                "agent": "software-engineer",
+                "outcome": "approved",
+                "result": "wrong outcome for phase",
+                "metrics": metrics(),
+            },
+        )
+
+
+def test_activity_requires_an_approved_plan(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+    manager.add_spec(work_item_id, specification(), tasks())
+
+    with pytest.raises(PlanConflictError):
+        manager.record_activity(
+            work_item_id,
+            "impl-work-items",
+            {
+                "agent": "software-engineer",
+                "outcome": "implemented",
+                "result": "too early",
+                "metrics": metrics(),
+            },
+        )
+
+
+def test_changes_requested_sends_the_target_task_back_for_rework(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+    manager.add_spec(work_item_id, specification(), tasks())
+    manager.approve_plan(work_item_id)
+
+    for task_id, agent, outcome in (
+        ("impl-work-items", "software-engineer", "implemented"),
+        ("unit-test-work-items", "quality-assurance-engineer", "passed"),
+    ):
+        manager.record_activity(
+            work_item_id,
+            task_id,
+            {"agent": agent, "outcome": outcome, "result": outcome, "metrics": metrics()},
+        )
+
+    manager.record_activity(
+        work_item_id,
+        "review-work-items",
+        {
+            "agent": "reviewer",
+            "outcome": "changes-requested",
+            "result": "Missing null guard.",
+            "remediationTargetTaskId": "impl-work-items",
+            "metrics": metrics(),
+        },
+    )
+
+    work_item = manager.get(work_item_id)
+    states = {task["id"]: task["state"] for task in work_item["tasks"]}
+    assert states["impl-work-items"] == "rework-required"
+    assert states["unit-test-work-items"] == "not-started"
+    assert states["review-work-items"] == "changes-requested"
+    assert work_item["execution"]["budget"]["reviewLoops"] == 1
 
 
 def test_add_spec_requires_tasks(tmp_path: Path) -> None:

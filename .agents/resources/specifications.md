@@ -4,13 +4,15 @@ This document defines the specification semantics and agent-facing operations fo
 
 ## Purpose
 
-A specification is the architectural design and implementation plan for a work item. It captures design decisions and integration points before the ADLC workflow creates implementation handoffs.
+A specification is the architectural design for a `user-story` or `chore` work item. It captures design decisions and integration points. Execution detail belongs on the tasks, not here.
+
+**Only `user-story` and `chore` work items have a specification.** `bug` and `documentation` work items are planned with tasks alone; the service and the schema both reject a specification on those types.
 
 Specifications are stored as the `specification` property nested inside a work-item document on the Kanban board. Agents should treat that as an adapter detail. The durable contract is the work-item identity, type, required fields, status values, and lifecycle transitions. A future store, such as SQLite, must preserve those semantics even if paths and filenames are replaced by queries and records.
 
 ## Identity
 
-Specifications have a 1-1 relationship to a work item. As such, a specification can be uniquely identified by a work item id.
+Specifications have a 1-1 relationship to a `user-story` or `chore` work item. As such, a specification can be uniquely identified by a work item id.
 
 - Request IDs are sequential five-digit numbers starting at `00001`.
 - Work-item IDs use `{request-id}-{work-item-sequence}`, where `work-item-sequence` starts at `1` for each request, for example `00001-1`.
@@ -19,27 +21,28 @@ Specifications have a 1-1 relationship to a work item. As such, a specification 
 
 ## Status Model
 
-Each specification has one lifecycle status.
+A specification does not have an independent lifecycle. It is part of the task plan and follows `planStatus`.
 
-| Status field | Meaning |
+| `planStatus` | Meaning |
 | --- | --- |
-| `draft` | The specification has been drawn up by the architect and is ready for human review. |
-| `approved` | The specification has been reviewed and approved and is ready for implementation. |
+| `null` | No plan has been authored yet. |
+| `draft` | The architect has authored the plan and it is ready for human review. |
+| `approved` | A human approved the plan. Tasks may now be dispatched. |
 
-The `Status` field is the storage-independent lifecycle value. Future adapters must expose the same lifecycle states.
+The specification `status` field mirrors `planStatus` and is set by the service. Never set it by hand.
 
 ## State Management Process
 
-1. The `software-architect` agent creates the new specification with status `draft` and adds it to the work item document.
-2. The agent presents the specification for human review.
-3. If any changes are requested the agent modifies the specification content accordingly (the status must remain at `draft`) and returns to step 2.
-4. At human approval, the agent changes the status to `approved`.
+1. The `software-architect` authors the specification and tasks with `add_spec`. `planStatus` becomes `draft`.
+2. The agent presents the plan for human review.
+3. If changes are requested the agent calls `revise_spec`. `planStatus` stays `draft`.
+4. At explicit human approval the agent calls `approve_plan`.
 
-The only allowed transition is `draft -> approved`. Once the specification is approved it becomes immutable.
+The only allowed transition is `draft -> approved`. Once approved the plan and specification are immutable, and no task may record activity before approval.
 
 ## Tasks
 
-Tasks are stored on the work item, not inside the specification document. Authoring rules, schema, and operations are defined in `.agents/resources/tasks.md`.
+Tasks are stored on the work item, not inside the specification document. Authoring rules, phases, owners, state machines, and operations are defined in `.agents/resources/tasks.md`.
 
 ## Operations
 
@@ -51,19 +54,22 @@ Install the repository tooling once with `python -m pip install -r requirements-
 python -m tools.work_items add_spec 00001-1 --input request.json
 python -m tools.work_items revise_spec 00001-1 --input request.json
 python -m tools.work_items get_spec 00001-1
-python -m tools.work_items approve_spec 00001-1
+python -m tools.work_items get_plan 00001-1
+python -m tools.work_items approve_plan 00001-1
 ```
 
-Creation input for `add_spec` and `revise_spec` is a JSON object with two properties:
+Input for `add_spec` and `revise_spec` is a JSON object with two properties:
 
-- `specification`: The specification JSON object. Every item requires `summary` and `architecturalSummary`. `keyDesignDecisions` should be provided where important trade-offs exist. The arrays `apiContracts`, `databaseSchema`, `uiComponents`, `testingRequirements`, `crossTaskIntegrationPoints` and `openQuestionsAndRisks` should be populated where relevant to the implementation, otherwise passed as an empty array. Do not provide `workItemId`, `created`, or `status`; those are service-owned fields.
+- `specification`: The specification JSON object. Every item requires `summary` and `architecturalSummary`. `keyDesignDecisions` should be provided where important trade-offs exist. The arrays `apiContracts`, `databaseSchema`, `uiComponents`, `crossTaskIntegrationPoints` and `openQuestionsAndRisks` should be populated where relevant, otherwise passed as an empty array. Do not provide `workItemId`, `created`, or `status`; those are service-owned fields.
 - `tasks`: A non-empty array of task objects as defined in `.agents/schemas/task.schema.json`.
 
-Software Architect may call `add_spec`, `revise_spec`, `get-spec` and `approve-spec`. Other agents may call `get_spec` only.
+Testing expectations are not part of the specification. Put them in the `verification` field of the relevant `unit-test` or `integration-test` task.
+
+Software Architect may call `add_spec`, `revise_spec`, `add_tasks`, `revise_tasks`, `get_spec`, `get_plan` and `approve_plan`. Other agents may call `get_spec` and `get_plan` only.
 
 ## Authoring Rules
 
-- Write from the implementor's perspective and keep each task independently understandable.
-- Split a specification into as many independently deliverable tasks as needed.
-- Acceptance criteria must be testable without relying on conversation history.
-- Do not change any specification details once approved.
+- Describe the architecture, not the steps. The steps are the tasks.
+- Reference existing architecture and conventions rather than restating them.
+- Make cross-task contracts explicit so agents working on different tasks do not diverge.
+- Do not change any specification details once the plan is approved.

@@ -4,7 +4,7 @@
   "description": "A structured representation of a work item",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "type", "created", "status", "request", "description", "tasks"],
+  "required": ["id", "type", "created", "status", "request", "description", "tasks", "planStatus", "execution"],
   "properties": {
     "id": {
       "type": "string",
@@ -43,10 +43,17 @@
     },
     "tasks": {
       "type": "array",
-      "description": "First-class implementation tasks and task activity history for this work item.",
+      "description": "First-class phase tasks and task activity history for this work item.",
       "items": {
         "$ref": "task.schema.json"
       }
+    },
+    "planStatus": {
+      "description": "Approval state of the task plan. The single human gate for every work-item type.",
+      "enum": [null, "draft", "approved"]
+    },
+    "execution": {
+      "$ref": "#/$defs/execution"
     },
     "acceptanceCriteria": {
       "type": "array",
@@ -125,6 +132,7 @@
       },
       "then": {
         "required": ["stepsToReproduce", "expectedResult", "actualResult"],
+        "properties": { "specification": { "type": "null" } },
         "not": {
           "anyOf": [
             { "required": ["acceptanceCriteria"] },
@@ -140,6 +148,7 @@
       },
       "then": {
         "required": ["content"],
+        "properties": { "specification": { "type": "null" } },
         "not": {
           "anyOf": [
             { "required": ["acceptanceCriteria"] },
@@ -150,5 +159,74 @@
         }
       }
     }
-  ]
+  ],
+  "$defs": {
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "nonNegativeNumber": {
+      "type": "number",
+      "minimum": 0
+    },
+    "execution": {
+      "type": "object",
+      "description": "Service-managed routing budget, cumulative metrics, and escalations.",
+      "additionalProperties": false,
+      "required": ["branch", "budget", "totals", "escalations"],
+      "properties": {
+        "branch": {
+          "type": ["string", "null"]
+        },
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "maxTaskAttempts",
+            "maxReviewLoops",
+            "maxValidationLoops",
+            "maxTotalAgentRuns",
+            "reviewLoops",
+            "validationLoops",
+            "totalAgentRuns"
+          ],
+          "properties": {
+            "maxTaskAttempts": { "$ref": "#/$defs/nonNegativeInteger" },
+            "maxReviewLoops": { "$ref": "#/$defs/nonNegativeInteger" },
+            "maxValidationLoops": { "$ref": "#/$defs/nonNegativeInteger" },
+            "maxTotalAgentRuns": { "$ref": "#/$defs/nonNegativeInteger" },
+            "reviewLoops": { "$ref": "#/$defs/nonNegativeInteger" },
+            "validationLoops": { "$ref": "#/$defs/nonNegativeInteger" },
+            "totalAgentRuns": { "$ref": "#/$defs/nonNegativeInteger" }
+          }
+        },
+        "totals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["durationSeconds", "totalTokens", "estimatedCostUsd"],
+          "properties": {
+            "durationSeconds": { "$ref": "#/$defs/nonNegativeNumber" },
+            "totalTokens": { "$ref": "#/$defs/nonNegativeInteger" },
+            "estimatedCostUsd": { "$ref": "#/$defs/nonNegativeNumber" }
+          }
+        },
+        "escalations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ts", "taskId", "requirement", "evidence", "attempts", "recommendedAction"],
+            "properties": {
+              "ts": { "type": "string", "format": "date-time" },
+              "taskId": { "type": ["string", "null"] },
+              "requirement": { "type": "string", "minLength": 1 },
+              "evidence": { "type": "string", "minLength": 1 },
+              "attempts": { "$ref": "#/$defs/nonNegativeInteger" },
+              "recommendedAction": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    }
+  }
 }

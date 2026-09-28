@@ -1,128 +1,147 @@
 # ADLC Workflow
 
-The `adlc` workflow is the orchestration contract for the Agentic Software Lifecycle. It defines how a work item moves from intake to a delivered, validated change. Work-item semantics and operations are defined in `.agents/resources/work-items.md`; persistence is encapsulated by `python -m tools.work_items`.
+The `adlc` workflow is the orchestration contract for the Agentic Development Lifecycle. It defines how a work item moves from intake to a delivered, validated change.
+
+This document is **descriptive**. The authority for routing is code:
+
+- `tools/work_items/phases.py` owns phase ownership, per-phase state machines, and outcome transitions.
+- `tools/adlc/routing.py` owns task selection.
+- `tools/adlc/policy.py` owns the failsafes.
+
+If this document and that code disagree, the code wins and this document is a bug.
 
 ## Core principle
 
 Each agent session is a pure function:
 
-> read state -> perform exactly one step -> write artifacts and append history -> stop.
+> read the task -> perform exactly one step -> record the outcome -> stop.
 
-The **orchestrator** agent manages work item state and decides what is to be run next by which agent. Implementation agents perform the work, write artifacts and report outome.
+The **orchestrator** asks `python -m tools.adlc next {work-item-id}` what happens next and dispatches it. It does not reason about routing. Implementing agents perform work and record an outcome. They do not route and they do not change work-item status.
 
 This separation is what makes loop termination guaranteed rather than hoped for: an agent cannot reset its own attempt counter or route itself past a guard.
 
-
-
 ### Ownership rules
 
-- Only the orchestrator mutates work item state. That includes `status`, integration/validation/budget counters, and `escalations`.
-- Task state, task attempts, and task history are mutated through `python -m tools.work_items record_activity` and stored on the work-item `tasks` array.
-- Before any driver or agent consumes an existing `state.json`, validate it with `python -m check_jsonschema --schemafile .agents/schemas/state.schema.json handoffs/{work-item-id}/state.json`. Install the validator first with `python -m pip install -r requirements-dev.txt`. On validation failure, do not consume or modify the file; report the validation errors and treat the work item as blocked pending correction.
-- Only the driver changes an existing work item's lifecycle status after triage creates it. Use `python -m tools.work_items change-status`; never modify work-item persistence directly.
-- Agents write their numbered artifact and report an outcome. They propose; they do not route, and they do not touch `state.json`.
-- The driver applies the previous run's transition at the start of the next dispatch, by comparing `state.json` against the artifacts on disk. A missing expected artifact is a failed run under the monotonic artifact rule.
-- `state.json` must be **self-sufficient**. A fresh agent needs only its work item, its specification chunk, and the artifact paths named in state. It must never depend on conversation history.
+- Only the orchestrator changes a work item's lifecycle status. Use `python -m tools.work_items change-status`.
+- Task state, attempts, remediation, and metrics are all mutated through `python -m tools.work_items record_activity`. Nothing else writes them.
+- Implementing agents record an outcome for their own task only. The service rejects an activity whose `agent` is not the task owner.
+- There is no control file. The work item is the single source of truth.
 
-### Work item states
+## Intake and planning
 
-| State | Next agent |
+1. `triage` creates one or more work items with status `new`.
+2. `software-architect` authors the task plan for **every** work-item type:
+   - `user-story` and `chore`: a specification plus tasks, via `add_spec`.
+   - `bug` and `documentation`: tasks only, via `add_tasks`. These types have no specification.
+3. A human approves the plan via `approve_plan`. This is the only planning gate and it applies to all types.
+
+No task can be dispatched or record activity until `planStatus` is `approved`.
+
+## Task graph shape
+
+The architect authors a graph of single-owner phase tasks. Dependencies express order.
+
+| Work item type | Typical graph |
 | --- | --- |
-| `specification-draft` | none - human approval gate; the driver records the outcome |
-| `specification-approved` | task owner from the next `tasks` entry (typically `software-engineer` or `documentation-writer`) |
-| `chunk-implementation` | `software-engineer` for the active task |
-| `chunk-testing` | `quality-assurance-engineer` for the active task |
-| `integration-testing` | `quality-assurance-engineer` (integration scope) |
-| `validation` | `implementation-validator` |
-| `bug-repro-test` | `quality-assurance-engineer` (optional bug-specific task state when explicitly planned) |
-| `bug-fix` | `software-engineer` (optional bug-specific task state when explicitly planned) |
-| `documentation` | `documentation-writer` (optional documentation-specific task state when explicitly planned) |
-| `ready-for-user` | none - final human review gate; the driver records the decision |
-| `done` | terminal - delivered and approved |
-| `blocked` | terminal - awaiting human intervention |
+| `user-story`, `chore` | per unit: `implementation` -> `unit-test` -> `review`; then optional `integration-test`; then `validation` |
+| `bug` | `bug-repro` -> `implementation` -> `unit-test` -> `validation` |
+| `documentation` | `documentation` -> `validation` |
 
-### Task states
+Rules enforced by the service:
 
-`not-started` -> `implemented` -> `tests-passing` | `tests-failing` -> `blocked`
+- Every plan contains a `validation` task.
+- `user-story` and `chore` plans must cover every `implementation` task with a downstream `review` task. Review is mandatory for these types only.
+- `bug` and `documentation` plans must not contain `review` tasks.
+- `integration-test` appears only when the architect plans it. Nothing synthesises one.
 
-All work item types should enter ADLC only after a software-architect design pass has produced a specification and task list for the item.
+Phases, owners, and per-phase states are defined in [.agents/resources/tasks.md](../resources/tasks.md).
 
-## Flow 1: user story or chore
+## Execution loop
 
-This workflow is defined in [feature.md](feature.md).
+```mermaid
+stateDiagram-v2
+    [*] --> planning
+    planning --> awaiting_approval : plan authored
+    awaiting_approval --> dispatch : human approves plan
+    dispatch --> dispatch : task reaches terminal success, next task selected
+    dispatch --> rework : changes-requested or rejected
+    rework --> dispatch : target task and downstream reset
+    dispatch --> blocked : failsafe trips or task blocked
+    dispatch --> ready_for_user : every task at terminal success
+    ready_for_user --> done : human approval
+    ready_for_user --> rework : unmet existing requirement
+    blocked --> [*]
+    done --> [*]
+```
 
-## Flow 2: bug
+One cycle:
 
-This workflow is defined in [bugfix.md](bugfix.md).
+1. `python -m tools.adlc next {work-item-id}` returns one of `await-approval`, `dispatch`, `block`, `ready-for-user`, or `stop`.
+2. On `dispatch`, the orchestrator opens a fresh session for the named `owner` with the returned task id and iteration.
+3. The agent does the work and calls `record_activity` with its outcome and metrics.
+4. Repeat.
 
-## Flow 3: documentation
+Task selection is simply: the first task in plan order whose dependencies are all at terminal success and whose own state is not terminal. Nothing more clever is needed, which is the point.
 
-This workflow is defined in [documentation.md](documentation.md).
+## Remediation
+
+`review` returns `approved` or `changes-requested`. `validation` returns `validated` or `rejected`. Both failure outcomes require `remediationTargetTaskId`.
+
+The service then returns the named task to `rework-required` or `tests-failing`, resets every task downstream of it to `not-started`, and increments `reviewLoops` or `validationLoops`. Retries append history to the existing task; they never create new tasks.
+
+A validator that finds the **requirement itself** is wrong must return `blocked`, not `rejected`. A wrong requirement cannot be fixed by an engineer, and looping on it burns the whole budget for nothing. Blocking escalates to a human, who revises the work item or raises a new one.
 
 ## Failsafes
 
-Attempt caps alone permit an agent to thrash identically three times. All of the following apply together.
+Attempt caps alone permit an agent to thrash identically three times. All of the following apply together and all are implemented in `tools/adlc/policy.py`.
 
-1. **Per-edge attempt caps.** `maxChunkRemediationLoops`, `maxIntegrationLoops`, `maxValidationLoops`. Counters live in `state.json` and are incremented by the driver only.
-2. **No-progress detection.** After each test run, compute `lastFailureSignature` as a hash of the sorted set of failing test identifiers. Two consecutive identical signatures for the same task escalate to `blocked` immediately, regardless of remaining budget. This is the highest-value failsafe: it catches the loop where the same mistake is repeated with cosmetic variation.
-3. **Global run budget.** `maxTotalAgentRuns` is a hard circuit breaker across the entire work item. Exceeding it forces `blocked`.
-4. **Monotonic artifact rule.** Every agent run must produce a new numbered artifact and corresponding task activity entry. A run producing none is a failed run and still counts against `totalAgentRuns`.
-5. **Test-integrity guard.** Reject a `testlog` iteration in which the total test count decreased unless the testlog states an explicit justification. Prevents progress by deletion.
-6. **Ownership guard.** Check the diff before accepting a run:
-   - `software-engineer` must not modify test files or test projects.
-   - `quality-assurance-engineer` must not modify production code.
-   - `implementation-validator` must not modify any file.
-   A violation invalidates the run. This prevents the classic failure where an engineer makes a test pass by editing the test.
-7. **Blocked is a clean terminal state**, not a failure to retry around. On `blocked`, append an entry to `escalations` describing the requirement, the evidence, the attempts made, and the recommended human action, then stop.
+1. **Per-task attempt cap.** `maxTaskAttempts` against the task `attempts` counter.
+2. **Per-edge loop caps.** `maxReviewLoops` and `maxValidationLoops` against the counters in `execution.budget`.
+3. **Global run budget.** `maxTotalAgentRuns` is a hard circuit breaker across the whole work item.
+4. **No-progress detection.** QA supplies `failureSignature` with a `failed` outcome. Two consecutive identical signatures for a task escalate to blocked immediately, regardless of remaining budget. This is the highest-value failsafe: it catches the loop where the same mistake is repeated with cosmetic variation.
+5. **Ownership guard.** `python -m tools.adlc guard {agent} {files...}` rejects a run where `software-engineer` touched tests, `quality-assurance-engineer` touched production code, or `reviewer`/`implementation-validator` touched anything. This prevents the classic failure where an engineer makes a failing test pass by editing the test.
+6. **Test-integrity guard.** Reject a test run in which the total test count decreased unless the agent states an explicit justification. Prevents progress by deletion.
+7. **Blocked is a clean terminal state**, not a failure to retry around. On blocked, append an entry to `execution.escalations` describing the requirement, the evidence, the attempts made, and the recommended human action, then stop.
 
 ## Git conventions
 
-- One branch per work item, created by the driver before the first implementing agent runs:
+- One branch per work item, created by the orchestrator before the first agent runs:
   - `feature/{work-item-id}/{title}` for user stories and chores
   - `fix/{work-item-id}/{title}` for bugs
   - `docs/{work-item-id}/{title}` for documentation
-- One commit per agent run, made by the **driver** after the run is accepted. Agents do not create branches or commits.
-- Conventional commits style message format:
+- One commit per accepted agent run, made by the **orchestrator**. Agents do not create branches or commits.
+- Conventional commit message format:
   ```
-  {type}({work-item-id} [{chunk-id}]): {agent-short-name} - iteration {n}
+  {type}({work-item-id} [{task-id}]): {agent-short-name} - iteration {n}
   ```
-  where `type` is "feat" for user stories, "chore" for chores, "fix" for bug fixes and "docs" for documentation. For example `feat(00001-1 [dotnet-backend]): engineer - iteration 2`. Use `-` as the chunk id for work-item-scoped runs such as validation.
+  where `type` is `feat` for user stories, `chore` for chores, `fix` for bugs and `docs` for documentation. For example `feat(00001-1 [impl-agent-resource]): engineer - iteration 2`.
 - The commit trail is the execution trace, and it makes rollback to the last good state trivial when a loop goes bad.
 
-## Artifact frontmatter
+## Human gates
 
-Every handoff artifact begins with this YAML block so a downstream agent can orient from the frontmatter alone and open the body only when detail is needed. Context economy matters most once a work item is many iterations deep.
+There are exactly two:
 
-```yaml
----
-workItem: 00001-1
-chunk: dotnet-backend        # '-' for work-item-scoped artifacts
-iteration: 2
-agent: software-engineer
-technology: dotnet           # omit when not technology-specific
-outcome: implemented         # implemented | passed | failed | blocked | Passed | Failed | Blocked
-filesChanged:
-  - src/Api/LoginEndpoint.cs
-nextOwner: quality-assurance-engineer
----
-```
+1. **Plan approval.** `planStatus` `draft -> approved`, for every work-item type.
+2. **Final acceptance.** At `ready-for-user`, a human accepts the delivery and the orchestrator sets the work item to `done`.
 
-### Handoff contract
-
-For detailed definitions of task history and handoff metadata, see [.agents/resources/tasks.md](../resources/tasks.md).
+Final-review remediation is limited to unmet requirements already recorded in the work item or approved specification. Scope additions become separate work items.
 
 ## Technology specialisation
 
-There is one `software-engineer` agent and one `quality-assurance-engineer` agent. Specialisation is a **parameter**, not a separate agent file: the driver passes the chunk's `technology` value, and the agent loads the matching rules from `.agents/rules/` and resources from `.agents/resources/`. Adding a stack means adding a rules file, not cloning an agent.
+There is one `software-engineer` agent and one `quality-assurance-engineer` agent. Specialisation is a **parameter**, not a separate agent file: the dispatch payload carries the task's `technology` value, and the agent loads the matching rules from `.agents/rules/` and resources from `.agents/resources/`. Adding a stack means adding a rules file, not cloning an agent.
+
+## Flows
+
+- User story or chore: [feature.md](feature.md)
+- Bug: [bugfix.md](bugfix.md)
+- Documentation: [documentation.md](documentation.md)
 
 ## Running the workflow
 
-### Stage 1: driver-assisted (current)
+### Stage 1: orchestrator-assisted (current)
 
-Use the `.agents/prompts/next.prompt.md` dispatcher. Given a work item id, it reads `state.json`, reports the next agent and the exact opening instruction, and states the transition to apply afterwards. Run each step in a new chat session to guarantee a fresh context window.
-
-Human gates remain at `specification-draft -> specification-approved` and at `ready-for-user -> done`. Final-review remediation is limited to unmet requirements already recorded in the work item or approved specification; scope additions become separate work items.
+Run `.agents/prompts/satisfactory-implement.prompt.md` against a work item id. It calls `python -m tools.adlc next`, reports the task and owner to run, and states what to do afterwards. Run each agent step in a new chat session to guarantee a fresh context window.
 
 ### Stage 2: automated (planned)
 
-Once the state machine is stable, a driver under `tools/factory/` reads `state.json`, invokes the CLI non-interactively with the selected agent, applies the transition, and commits. Each invocation is a separate process, so fresh context comes for free. The transition logic must be unit tested, because it is the actual guarantee that loops terminate.
+A driver invokes the CLI non-interactively with the selected agent, records the outcome, and commits. Each invocation is a separate process, so fresh context comes for free. The routing and failsafe logic is already unit tested in `tests/adlc/`, which is the actual guarantee that loops terminate.

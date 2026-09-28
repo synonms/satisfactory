@@ -15,17 +15,24 @@ from .models import (
     WorkItemType,
     WorkItemValidationError,
     Specification,
-    SpecificationConflictError,
     SpecificationStatus,
     SpecificationValidationError,
+    PlanConflictError,
+    PlanNotFoundError,
+    PlanStatus,
     Task,
     TaskActivity,
     TaskOutcome,
+    TaskPhase,
     TaskState,
     TaskValidationError,
 )
+from . import phases
 from .repository import WorkItemRepository
 from .validation import WorkItemValidator, SpecificationValidator, TaskValidator
+
+SPECIFICATION_TYPES = {WorkItemType.USER_STORY, WorkItemType.CHORE}
+REVIEWED_TYPES = SPECIFICATION_TYPES
 
 WORK_ITEM_COMMON_INPUT_FIELDS = {"type", "request", "description", "source"}
 WORK_ITEM_TYPE_INPUT_FIELDS = {
@@ -47,24 +54,21 @@ SPECIFICATION_COMMON_INPUT_FIELDS = {
     "apiContracts",
     "databaseSchema",
     "uiComponents",
-    "testingRequirements",
     "crossTaskIntegrationPoints",
     "openQuestionsAndRisks",
 }
 TASK_COMMON_INPUT_FIELDS = {
     "id",
+    "phase",
     "owner",
     "scope",
+    "deliverables",
+    "verification",
+    "technology",
     "affectedPaths",
     "contracts",
     "dependencies",
     "acceptanceCriteriaCovered",
-    "state",
-    "implementAttempts",
-    "testAttempts",
-    "lastFailureSignature",
-    "latestArtifact",
-    "history",
 }
 ACTIVITY_COMMON_INPUT_FIELDS = {
     "agent",
@@ -73,12 +77,27 @@ ACTIVITY_COMMON_INPUT_FIELDS = {
     "result",
     "artifact",
     "filesChanged",
-    "nextOwner",
+    "remediationTargetTaskId",
+    "failureSignature",
     "metrics",
 }
-SPECIFICATION_TRANSITIONS = {
-    SpecificationStatus.DRAFT: {SpecificationStatus.APPROVED},
-    SpecificationStatus.APPROVED: set()
+DEFAULT_EXECUTION = {
+    "branch": None,
+    "budget": {
+        "maxTaskAttempts": 3,
+        "maxReviewLoops": 3,
+        "maxValidationLoops": 3,
+        "maxTotalAgentRuns": 40,
+        "reviewLoops": 0,
+        "validationLoops": 0,
+        "totalAgentRuns": 0,
+    },
+    "totals": {
+        "durationSeconds": 0,
+        "totalTokens": 0,
+        "estimatedCostUsd": 0,
+    },
+    "escalations": [],
 }
 
 class WorkItemService:
@@ -155,56 +174,44 @@ class WorkItemService:
         return self.update_status(work_item_id, new_status)
 
 
-    def add_spec(self, work_item_id: str, input: Mapping[str, Any], tasks_input: Sequence[Mapping[str, Any]]) -> Specification:
-        if not input:
-            raise SpecificationValidationError("'add_spec' request must contain a specification")
-        if not tasks_input:
-            raise TaskValidationError("'add_spec' request must contain at least one task")
-        normalized = deepcopy(dict(input))  # type: ignore
-        normalized_tasks = [deepcopy(dict(task)) for task in tasks_input]
+    def add_spec(self, work_item_id: str, input: Mapping[str, Any], tasks_input: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+        return self._author_plan(work_item_id, input, tasks_input, revise=False)
 
+
+    def revise_spec(self, work_item_id: str, input: Mapping[str, Any], tasks_input: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+        return self._author_plan(work_item_id, input, tasks_input, revise=True)
+
+
+    def add_tasks(self, work_item_id: str, tasks_input: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+        return self._author_plan(work_item_id, None, tasks_input, revise=False)
+
+
+    def revise_tasks(self, work_item_id: str, tasks_input: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+        return self._author_plan(work_item_id, None, tasks_input, revise=True)
+
+
+    def get_plan(self, work_item_id: str) -> dict[str, Any]:
+        self.get(work_item_id)
+        return self._repository.get_plan(work_item_id)
+
+
+    def approve_plan(self, work_item_id: str) -> dict[str, Any]:
         work_item = self.get(work_item_id)
-
-        specification = self._build_specification(work_item_id, normalized)
-        tasks = self._build_tasks(work_item, normalized_tasks)
-
-        return self._repository.add_spec(work_item_id, specification, tasks)
-
-
-    def revise_spec(self, work_item_id: str, input: Mapping[str, Any], tasks_input: Sequence[Mapping[str, Any]]) -> Specification:
-        if not input:
-            raise SpecificationValidationError("'revise_spec' request must contain a specification")
-        if not tasks_input:
-            raise TaskValidationError("'revise_spec' request must contain at least one task")
-        normalized = deepcopy(dict(input))  # type: ignore
-        normalized_tasks = [deepcopy(dict(task)) for task in tasks_input]
-
-        work_item = self.get(work_item_id)
-
-        specification = self._build_specification(work_item_id, normalized)
-        tasks = self._build_tasks(work_item, normalized_tasks)
-
-        return self._repository.revise_spec(work_item_id, specification, tasks)
+        current_status = work_item.get("planStatus")
+        if current_status is None:
+            raise PlanNotFoundError(f"Work item {work_item_id} has no task plan to approve")
+        if current_status == PlanStatus.APPROVED.value:
+            return self._repository.get_plan(work_item_id)
+        if current_status != PlanStatus.DRAFT.value:
+            raise PlanConflictError(
+                f"Cannot approve the plan for work item {work_item_id} from status {current_status}"
+            )
+        return self._repository.approve_plan(work_item_id)
 
 
     def get_spec(self, work_item_id: str) -> Specification:
         self.get(work_item_id)
         return self._repository.get_spec(work_item_id)
-
-
-    def approve_spec(self, work_item_id: str) -> Specification:
-        self.get(work_item_id)
-
-        specification = self.get_spec(work_item_id)
-        current_status = SpecificationStatus(specification["status"])
-        if current_status == SpecificationStatus.APPROVED:
-            return specification
-        if SpecificationStatus.APPROVED not in SPECIFICATION_TRANSITIONS[current_status]:
-            raise SpecificationConflictError(
-                f"Cannot transition specification for work item {work_item_id} "
-                f"from {current_status.value} to {SpecificationStatus.APPROVED.value}"
-            )
-        return self._repository.approve_spec(work_item_id)
 
 
     def get_task(self, work_item_id: str, task_id: str) -> Task:
@@ -221,9 +228,57 @@ class WorkItemService:
     ) -> Task:
         if not input:
             raise TaskValidationError("'record_activity' request must contain an activity payload")
+        work_item = self.get(work_item_id)
+        if work_item.get("planStatus") != PlanStatus.APPROVED.value:
+            raise PlanConflictError(
+                f"Work item {work_item_id} has no approved plan; activity cannot be recorded"
+            )
+        task = self._repository.get_task(work_item_id, task_id)
         normalized = deepcopy(dict(input))  # type: ignore
-        activity = self._build_activity(normalized)
-        return self._repository.record_activity(work_item_id, task_id, activity)
+        activity, failure_signature = self._build_activity(task, normalized)
+        return self._repository.record_activity(work_item_id, task_id, activity, failure_signature)
+
+
+    def _author_plan(
+        self,
+        work_item_id: str,
+        specification_input: Mapping[str, Any] | None,
+        tasks_input: Sequence[Mapping[str, Any]],
+        *,
+        revise: bool,
+    ) -> dict[str, Any]:
+        if not tasks_input:
+            raise TaskValidationError("A task plan must contain at least one task")
+
+        work_item = self.get(work_item_id)
+        item_type = WorkItemType(work_item["type"])
+        requires_specification = item_type in SPECIFICATION_TYPES
+
+        if requires_specification and not specification_input:
+            raise SpecificationValidationError(
+                f"Work item {work_item_id} of type {item_type.value} requires a specification"
+            )
+        if not requires_specification and specification_input:
+            raise SpecificationValidationError(
+                f"Work item {work_item_id} of type {item_type.value} must not have a specification"
+            )
+
+        current_status = work_item.get("planStatus")
+        if current_status == PlanStatus.APPROVED.value:
+            raise PlanConflictError(f"Work item {work_item_id} already has an approved plan")
+        if revise and current_status is None:
+            raise PlanConflictError(f"Work item {work_item_id} has no task plan to revise")
+        if not revise and current_status is not None:
+            raise PlanConflictError(f"Work item {work_item_id} already has a task plan")
+
+        specification = (
+            self._build_specification(work_item_id, deepcopy(dict(specification_input)))
+            if specification_input
+            else None
+        )
+        tasks = self._build_tasks(work_item, [deepcopy(dict(task)) for task in tasks_input])
+
+        return self._repository.set_plan(work_item_id, specification, tasks)
 
 
 
@@ -253,6 +308,8 @@ class WorkItemService:
 
         record["tasks"] = []
         record["specification"] = None
+        record["planStatus"] = None
+        record["execution"] = deepcopy(DEFAULT_EXECUTION)
 
         if item_type in {WorkItemType.USER_STORY, WorkItemType.CHORE}:
             criteria = item.get("acceptanceCriteria")
@@ -281,7 +338,7 @@ class WorkItemService:
             "created": self._today().isoformat(),
             "status": SpecificationStatus.DRAFT.value
         }
-        for field in ("summary", "architecturalSummary", "keyDesignDecisions", "apiContracts", "databaseSchema", "uiComponents", "testingRequirements", "crossTaskIntegrationPoints", "openQuestionsAndRisks"):
+        for field in ("summary", "architecturalSummary", "keyDesignDecisions", "apiContracts", "databaseSchema", "uiComponents", "crossTaskIntegrationPoints", "openQuestionsAndRisks"):
             if field in item:
                 record[field] = item[field]
 
@@ -293,11 +350,11 @@ class WorkItemService:
         if not items:
             raise TaskValidationError("At least one task is required")
 
+        item_type = WorkItemType(work_item["type"])
         task_ids: set[str] = set()
         tasks: list[Task] = []
         for item in items:
-            allowed = TASK_COMMON_INPUT_FIELDS
-            unexpected = sorted(set(item) - allowed)
+            unexpected = sorted(set(item) - TASK_COMMON_INPUT_FIELDS)
             if unexpected:
                 raise TaskValidationError(
                     f"Task input contains unsupported fields: {', '.join(unexpected)}"
@@ -310,26 +367,50 @@ class WorkItemService:
                 raise TaskValidationError(f"Duplicate task id: {task_id}")
             task_ids.add(task_id)
 
+            try:
+                phase = TaskPhase(item.get("phase"))
+            except (TypeError, ValueError) as error:
+                raise TaskValidationError(
+                    f"Task {task_id} has an invalid phase: {item.get('phase')}"
+                ) from error
+
+            expected_owner = phases.owner_for(phase)
+            owner = item.get("owner", expected_owner)
+            if owner != expected_owner:
+                raise TaskValidationError(
+                    f"Task {task_id} in phase {phase.value} must be owned by {expected_owner}"
+                )
+
             task: Task = {
                 "id": task_id,
-                "owner": item.get("owner", "software-engineer"),
+                "phase": phase.value,
+                "owner": owner,
                 "scope": item.get("scope", ""),
+                "deliverables": item.get("deliverables", []),
+                "verification": item.get("verification", []),
                 "affectedPaths": item.get("affectedPaths", []),
                 "contracts": item.get("contracts", []),
                 "dependencies": item.get("dependencies", []),
                 "acceptanceCriteriaCovered": item.get("acceptanceCriteriaCovered", []),
-                "state": item.get("state", TaskState.NOT_STARTED.value),
-                "implementAttempts": item.get("implementAttempts", 0),
-                "testAttempts": item.get("testAttempts", 0),
-                "lastFailureSignature": item.get("lastFailureSignature"),
-                "latestArtifact": item.get("latestArtifact"),
-                "history": item.get("history", []),
+                "state": TaskState.NOT_STARTED.value,
+                "attempts": 0,
+                "lastFailureSignature": None,
+                "previousFailureSignature": None,
+                "latestArtifact": None,
+                "remediationTargetTaskId": None,
+                "blockedReason": None,
+                "history": [],
             }
+            if "technology" in item:
+                task["technology"] = item["technology"]
 
             self._task_validator.validate(task)
             tasks.append(task)
 
-        if work_item["type"] in {WorkItemType.USER_STORY.value, WorkItemType.CHORE.value}:
+        self._validate_dependencies(tasks, task_ids)
+        self._validate_graph_shape(item_type, tasks)
+
+        if item_type in SPECIFICATION_TYPES:
             known_criteria = {
                 criterion["id"]
                 for criterion in work_item.get("acceptanceCriteria", [])
@@ -339,16 +420,78 @@ class WorkItemService:
                 unknown = sorted(set(task.get("acceptanceCriteriaCovered", [])) - known_criteria)
                 if unknown:
                     raise TaskValidationError(
-                        "Task references unknown acceptance criteria: "
-                        + ", ".join(unknown)
+                        "Task references unknown acceptance criteria: " + ", ".join(unknown)
                     )
 
         return tasks
 
 
-    def _build_activity(self, item: dict[str, Any]) -> TaskActivity:
-        allowed = ACTIVITY_COMMON_INPUT_FIELDS
-        unexpected = sorted(set(item) - allowed)
+    @staticmethod
+    def _validate_dependencies(tasks: Sequence[Task], task_ids: set[str]) -> None:
+        for task in tasks:
+            unknown = sorted(set(task["dependencies"]) - task_ids)
+            if unknown:
+                raise TaskValidationError(
+                    f"Task {task['id']} depends on unknown tasks: {', '.join(unknown)}"
+                )
+            if task["id"] in task["dependencies"]:
+                raise TaskValidationError(f"Task {task['id']} cannot depend on itself")
+
+        dependencies = {task["id"]: list(task["dependencies"]) for task in tasks}
+        resolved: set[str] = set()
+        visiting: set[str] = set()
+
+        def visit(task_id: str) -> None:
+            if task_id in resolved:
+                return
+            if task_id in visiting:
+                raise TaskValidationError(f"Task dependencies contain a cycle involving {task_id}")
+            visiting.add(task_id)
+            for dependency in dependencies[task_id]:
+                visit(dependency)
+            visiting.discard(task_id)
+            resolved.add(task_id)
+
+        for task_id in dependencies:
+            visit(task_id)
+
+
+    @staticmethod
+    def _validate_graph_shape(item_type: WorkItemType, tasks: Sequence[Task]) -> None:
+        by_phase: dict[str, list[Task]] = {}
+        for task in tasks:
+            by_phase.setdefault(task["phase"], []).append(task)
+
+        if not by_phase.get(TaskPhase.VALIDATION.value):
+            raise TaskValidationError("A task plan must contain a validation task")
+
+        review_tasks = by_phase.get(TaskPhase.REVIEW.value, [])
+        implementation_tasks = by_phase.get(TaskPhase.IMPLEMENTATION.value, [])
+
+        if item_type not in REVIEWED_TYPES:
+            if review_tasks:
+                raise TaskValidationError(
+                    f"Work items of type {item_type.value} must not contain review tasks"
+                )
+            return
+
+        dependents: dict[str, list[str]] = {task["id"]: [] for task in tasks}
+        for task in tasks:
+            for dependency in task["dependencies"]:
+                dependents[dependency].append(task["id"])
+        phase_by_id = {task["id"]: task["phase"] for task in tasks}
+
+        for task in implementation_tasks:
+            if not _reaches_phase(task["id"], TaskPhase.REVIEW.value, dependents, phase_by_id):
+                raise TaskValidationError(
+                    f"Implementation task {task['id']} is not covered by a review task"
+                )
+
+
+    def _build_activity(
+        self, task: Task, item: dict[str, Any]
+    ) -> tuple[TaskActivity, str | None]:
+        unexpected = sorted(set(item) - ACTIVITY_COMMON_INPUT_FIELDS)
         if unexpected:
             raise TaskValidationError(
                 f"Activity input contains unsupported fields: {', '.join(unexpected)}"
@@ -356,18 +499,37 @@ class WorkItemService:
 
         agent = item.get("agent")
         outcome = item.get("outcome")
-        next_owner = item.get("nextOwner")
         if not isinstance(agent, str) or not agent:
             raise TaskValidationError("Activity requires a non-empty 'agent'")
+        if agent != task["owner"]:
+            raise TaskValidationError(
+                f"Task {task['id']} is owned by {task['owner']}, not {agent}"
+            )
         if not isinstance(outcome, str) or not outcome:
             raise TaskValidationError("Activity requires a non-empty 'outcome'")
-        if not isinstance(next_owner, str) or not next_owner:
-            raise TaskValidationError("Activity requires a non-empty 'nextOwner'")
 
         try:
             parsed_outcome = TaskOutcome(outcome)
         except ValueError as error:
             raise TaskValidationError(f"Unsupported task activity outcome: {outcome}") from error
+
+        phase = TaskPhase(task["phase"])
+        if parsed_outcome not in phases.allowed_outcomes(phase):
+            allowed = ", ".join(sorted(value.value for value in phases.allowed_outcomes(phase)))
+            raise TaskValidationError(
+                f"Outcome {parsed_outcome.value} is not valid for a {phase.value} task. "
+                f"Allowed outcomes: {allowed}"
+            )
+
+        metrics = item.get("metrics")
+        if not isinstance(metrics, Mapping):
+            raise TaskValidationError("Activity requires a 'metrics' object")
+
+        remediation_target = item.get("remediationTargetTaskId")
+        if parsed_outcome in phases.REMEDIATION_OUTCOMES and not remediation_target:
+            raise TaskValidationError(
+                f"Outcome {parsed_outcome.value} requires a 'remediationTargetTaskId'"
+            )
 
         activity: TaskActivity = {
             "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -377,10 +539,31 @@ class WorkItemService:
             "result": item.get("result", parsed_outcome.value),
             "artifact": item.get("artifact"),
             "filesChanged": item.get("filesChanged", []),
-            "nextOwner": next_owner,
+            "metrics": dict(metrics),
         }
         if "technology" in item:
             activity["technology"] = item["technology"]
-        if "metrics" in item:
-            activity["metrics"] = item["metrics"]
-        return activity
+        if remediation_target:
+            activity["remediationTargetTaskId"] = remediation_target
+
+        failure_signature = item.get("failureSignature")
+        return activity, failure_signature
+
+
+def _reaches_phase(
+    task_id: str,
+    phase: str,
+    dependents: Mapping[str, list[str]],
+    phase_by_id: Mapping[str, str],
+) -> bool:
+    seen: set[str] = set()
+    queue = list(dependents[task_id])
+    while queue:
+        current = queue.pop()
+        if current in seen:
+            continue
+        seen.add(current)
+        if phase_by_id[current] == phase:
+            return True
+        queue.extend(dependents[current])
+    return False

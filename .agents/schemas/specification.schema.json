@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Specification",
-  "description": "A structured representation of an implementation specification for any work item",
+  "description": "The architectural design for a user-story or chore work item. Execution detail lives on tasks.",
   "type": "object",
   "additionalProperties": false,
   "required": ["workItemId", "created", "status", "summary", "architecturalSummary"],
@@ -63,17 +63,9 @@
         "minLength": 1
       }
     },
-    "testingRequirements": {
-      "type": "array",
-      "description": "Testing scenarios and coverage expectations that quality-assurance-engineer must satisfy",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
     "crossTaskIntegrationPoints": {
       "type": "array",
-      "description": "e.g. \"React frontend consumes the `/employees` endpoint contract produced by the .NET backend chunk\"",
+      "description": "e.g. \"The Blazor UI consumes the `/agents` endpoint contract produced by the API task\"",
       "items": {
         "type": "string",
         "minLength": 1

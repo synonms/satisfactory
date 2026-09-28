@@ -47,14 +47,28 @@ The `Status` field is the storage-independent lifecycle value. Future adapters m
 ## State Management Process
 
 1. The `triage` agent creates approved work items with status `new` through `create-request`.
-2. The dispatcher starts the ADLC workflow and changes the status to `in-progress` through `change-status`.
-3. Agents retrieve the work item through `get` and treat it as an immutable requirement source.
-4. If a failsafe trips, the dispatcher changes the status to `blocked` and records escalations through task history activity.
-5. At final human approval, the dispatcher changes the status to `done`.
-6. During final-review remediation, the work item remains `in-progress`.
-7. Scope additions are not added to an in-progress work item. Create a separate work item instead.
+2. The `software-architect` authors the task plan. `planStatus` becomes `draft`.
+3. A human approves the plan through `approve_plan`. `planStatus` becomes `approved`.
+4. The orchestrator starts the ADLC workflow and changes the status to `in-progress` through `change-status`.
+5. Agents retrieve the work item through `get` and treat it as an immutable requirement source.
+6. If a failsafe trips, the orchestrator changes the status to `blocked` and records the escalation in `execution.escalations`.
+7. At final human approval, the orchestrator changes the status to `done`.
+8. During final-review remediation, the work item remains `in-progress`.
+9. Scope additions are not added to an in-progress work item. Create a separate work item instead.
 
-The only allowed transitions are `new -> in-progress`, `in-progress -> done`, and `in-progress -> blocked`. Repeating the current status is idempotent. The dispatcher is the only actor that changes lifecycle status after creation.
+The only allowed transitions are `new -> in-progress`, `in-progress -> done`, and `in-progress -> blocked`. Repeating the current status is idempotent. The orchestrator is the only actor that changes lifecycle status after creation.
+
+## Plan and Execution
+
+Every work item carries two service-managed fields beyond its requirement content.
+
+- `planStatus`: `null`, `draft`, or `approved`. The single human gate for every work-item type. No task may record activity while it is `null` or `draft`.
+- `execution`: the routing budget, cumulative metrics, and escalations.
+  - `budget`: `maxTaskAttempts`, `maxReviewLoops`, `maxValidationLoops`, `maxTotalAgentRuns`, plus the `reviewLoops`, `validationLoops`, and `totalAgentRuns` counters.
+  - `totals`: `durationSeconds`, `totalTokens`, `estimatedCostUsd`, accumulated from every task activity.
+  - `escalations`: why the work item was blocked and what a human should do.
+
+There is no separate control file. The work item is the only source of truth for routing.
 
 ## Operations
 
@@ -67,19 +81,20 @@ python -m tools.work_items create-request --input request.json
 python -m tools.work_items get 00001-1
 python -m tools.work_items list --status new --type user-story --request-id 00001
 python -m tools.work_items change-status 00001-1 in-progress
-python -m tools.work_items get_task 00001-1 dotnet-api
-python -m tools.work_items record_activity 00001-1 dotnet-api --input activity.json
+python -m tools.work_items get_task 00001-1 impl-agent-resource
+python -m tools.work_items record_activity 00001-1 impl-agent-resource --input activity.json
 ```
 
 Creation input is a JSON array in proposal order. Every item requires `type`, `request`, and `description`; `source` is optional. Do not provide `id`, `created`, or `status`.
 
 - User stories and chores require `acceptanceCriteria`, an array of independently verifiable description strings.
-- Every work item includes a service-managed `tasks` array. It is created as `[]` and later populated by task-authoring operations.
-- Every work item includes a service-managed `specification` field. It is created as `null` and may later be set via `add_spec`, `revise_spec`, and `approve_spec`.
+- Every work item includes a service-managed `tasks` array. It is created as `[]` and later populated by the architect's task plan.
+- Every work item includes a service-managed `planStatus`, created as `null`, and a service-managed `execution` block.
+- User stories and chores include a service-managed `specification` field, created as `null`. Bugs and documentation items must keep it `null`; the service and schema reject a specification on those types.
 - Bugs require `stepsToReproduce`, `expectedResult`, and `actualResult`.
 - Documentation items require `content` describing what must be produced or updated.
 
-Triage may call `create-request`, `get`, and `list`. The dispatcher may call `get`, `list`, and `change-status`. Implementing agents may call `get`, `get_task`, and `record_activity`.
+Triage may call `create-request`, `get`, and `list`. The orchestrator may call `get`, `list`, and `change-status`. Implementing agents may call `get`, `get_task`, `get_spec`, `get_plan`, and `record_activity`.
 
 ## Authoring Rules
 

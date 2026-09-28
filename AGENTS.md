@@ -12,20 +12,22 @@ This file is the entry point for agents working in this repository. Use it to fi
 - **Rules**: `.agents/rules/`
 - **Skills**: `.agents/skills/`
 - **Workflows**: `.agents/workflows/`
-- **Python Scripts**: `tools/`
+- **Work-item domain and persistence**: `tools/work_items/`
+- **Deterministic ADLC routing and failsafes**: `tools/adlc/`
 - **Python Script Tests**: `tests/`
 
 ## Agent directory
-- **documentation-writer** - Implements documentation work items against the repository's documentation.
-- **implementation-validator** - Independently validates delivered implementation and test work against upstream requirements.
-- **orchestrator** - Coordinates the implementation and validation of work items using the Agentic Development Lifecycle.
-- **quality-assurance-engineer** - Implements automated tests from approved specifications, writes failing reproduction tests for bugs, and handles ad hoc testing work.
-- **software-architect** - Writes technical specifications, with implementation plans decomposed into technology-specific tasks for the software engineers.
-- **software-engineer** - Implements approved technical specification chunks across the repository using the applicable technology rules and resources.
+- **documentation-writer** - Delivers `documentation` phase tasks against the repository's documentation.
+- **implementation-validator** - Independently validates delivered work against the upstream requirement.
+- **orchestrator** - Dispatches ADLC tasks using the deterministic routing in `tools/adlc`.
+- **quality-assurance-engineer** - Delivers `bug-repro`, `unit-test`, and `integration-test` phase tasks, and handles ad hoc testing work.
+- **reviewer** - Reviews delivered code and tests for user stories and chores.
+- **software-architect** - Authors the task plan for every work item, plus an architectural specification for user stories and chores.
+- **software-engineer** - Delivers `implementation` phase tasks using the applicable technology rules and resources.
 - **triage** - Categorises incoming requests and creates approved work items.
 
 ## Skills
-- **create-specification** - Turn a user story or chore work item into an implementation-ready specification on the ADLC board.
+- **create-plan** - Turn a work item into an approved task plan on the ADLC board.
 - **create-work-item** - Turn a free-text request or Azure DevOps ticket into a work item on the ADLC board.
 
 ## Reference resources

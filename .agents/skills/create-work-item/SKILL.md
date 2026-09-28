@@ -45,12 +45,12 @@ After approval:
 5. Write the input to a temporary JSON file, call `python -m tools.work_items create-request --input {temporary-file}`, and remove the temporary file after the command finishes.
 6. Treat a nonzero exit code as a blocker. Report the structured error and do not create records manually.
 
-Do not modify existing work items, move items between lifecycle folders, or create any other files. Those are orchestrator responsibilities.
+Do not modify existing work items or create any other files. Those are architect and orchestrator responsibilities.
 
 ## 5. Report the result
 
-Report each created work-item ID, type, and request summary from the command result. State that the items are ready to enter the ADLC workflow. For each created work item, tell the user to run
-`.agents/prompts/satisfactory-design.prompt.md` against the selected work-item ID in a new chat session with a fresh context window.
+Report each created work-item ID, type, and request summary from the command result. State that the items are ready to enter the ADLC workflow. For **every** created work item, regardless of type, tell the user to run
+`.agents/prompts/satisfactory-design.prompt.md` against the work-item ID in a new chat session with a fresh context window. Bugs and documentation items go through design too: the architect authors their task plan, just without a specification.
 
 If creation is blocked, report the exact missing input or failed operation and leave already-created records untouched. Do not claim that an item is ready unless the command returned its required fields and `new` status.
 

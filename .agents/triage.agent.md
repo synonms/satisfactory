@@ -34,4 +34,4 @@ Turn an initial request into one or more approved `new` work items that are read
 
 ## Handoff
 
-Created work items have status `new` and are ready for ingestion into the ADLC process flows. The service initializes `specification` to `null` for later architect population and initializes `tasks` as an empty array for later task authoring.
+Created work items have status `new` and `planStatus` of `null`. Every type, including `bug` and `documentation`, goes to the `software-architect` next to have its task plan authored. The service initializes `specification` to `null`, `tasks` to an empty array, and the `execution` budget block.

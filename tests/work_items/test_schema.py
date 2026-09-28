@@ -2,12 +2,17 @@ import json
 from pathlib import Path
 
 import pytest
-from jsonschema import Draft7Validator, FormatChecker
+from jsonschema import Draft7Validator, FormatChecker, RefResolver
 
 
 ROOT = Path(__file__).parents[2]
-SCHEMA = json.loads((ROOT / ".agents/schemas/work-item.schema.json").read_text())
-VALIDATOR = Draft7Validator(SCHEMA, format_checker=FormatChecker())
+SCHEMA_PATH = ROOT / ".agents/schemas/work-item.schema.json"
+SCHEMA = json.loads(SCHEMA_PATH.read_text())
+VALIDATOR = Draft7Validator(
+    SCHEMA,
+    resolver=RefResolver(base_uri=SCHEMA_PATH.resolve().as_uri(), referrer=SCHEMA),
+    format_checker=FormatChecker(),
+)
 
 
 def work_item(item_type: str) -> dict:
@@ -19,6 +24,8 @@ def work_item(item_type: str) -> dict:
         "request": "Manage work items through code",
         "description": "Provide a storage-independent work-item service.",
         "tasks": [],
+        "planStatus": None,
+        "execution": execution(),
     }
     if item_type in {"user-story", "chore"}:
         item["acceptanceCriteria"] = [
@@ -34,6 +41,23 @@ def work_item(item_type: str) -> dict:
     else:
         item["content"] = "Document the supported operations."
     return item
+
+
+def execution() -> dict:
+    return {
+        "branch": None,
+        "budget": {
+            "maxTaskAttempts": 3,
+            "maxReviewLoops": 3,
+            "maxValidationLoops": 3,
+            "maxTotalAgentRuns": 40,
+            "reviewLoops": 0,
+            "validationLoops": 0,
+            "totalAgentRuns": 0,
+        },
+        "totals": {"durationSeconds": 0, "totalTokens": 0, "estimatedCostUsd": 0},
+        "escalations": [],
+    }
 
 
 @pytest.mark.parametrize("item_type", ["user-story", "chore", "bug", "documentation"])
@@ -96,3 +120,17 @@ def test_schema_allows_null_specification_for_non_feature_types(item_type: str) 
     item["specification"] = None
 
     VALIDATOR.validate(item)
+
+
+@pytest.mark.parametrize("item_type", ["bug", "documentation"])
+def test_schema_rejects_a_specification_on_non_feature_types(item_type: str) -> None:
+    item = work_item(item_type)
+    item["specification"] = {
+        "workItemId": "00001-1",
+        "created": "2026-09-21",
+        "status": "draft",
+        "summary": "Should not exist.",
+        "architecturalSummary": "Should not exist.",
+    }
+
+    assert list(VALIDATOR.iter_errors(item))

@@ -54,11 +54,22 @@ def build_parser() -> argparse.ArgumentParser:
     revise_spec.add_argument("work_item_id")
     revise_spec.add_argument("--input", default="-")
 
+    add_tasks = commands.add_parser("add_tasks", aliases=["add-tasks"])
+    add_tasks.add_argument("work_item_id")
+    add_tasks.add_argument("--input", default="-")
+
+    revise_tasks = commands.add_parser("revise_tasks", aliases=["revise-tasks"])
+    revise_tasks.add_argument("work_item_id")
+    revise_tasks.add_argument("--input", default="-")
+
     get_spec = commands.add_parser("get_spec", aliases=["get-spec"])
     get_spec.add_argument("work_item_id")
 
-    approve_spec = commands.add_parser("approve_spec", aliases=["approve-spec"])
-    approve_spec.add_argument("work_item_id")
+    get_plan = commands.add_parser("get_plan", aliases=["get-plan"])
+    get_plan.add_argument("work_item_id")
+
+    approve_plan = commands.add_parser("approve_plan", aliases=["approve-plan"])
+    approve_plan.add_argument("work_item_id")
 
     get_task = commands.add_parser("get_task", aliases=["get-task"])
     get_task.add_argument("work_item_id")
@@ -93,12 +104,12 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif arguments.command in {"change-status", "update_status"}:
             result = service.update_status(arguments.work_item_id, WorkItemStatus(arguments.status))
-        elif arguments.command == "add_spec":
+        elif arguments.command in {"add_spec", "revise_spec"}:
             payload = _read_input(arguments.input)
             if not isinstance(payload, dict):
                 from .models import SpecificationValidationError
 
-                raise SpecificationValidationError("Creation input must be a JSON object")
+                raise SpecificationValidationError("Input must be a JSON object")
             specification = payload.get("specification")
             tasks = payload.get("tasks")
             if not isinstance(specification, dict):
@@ -109,28 +120,28 @@ def main(argv: list[str] | None = None) -> int:
                 from .models import TaskValidationError
 
                 raise TaskValidationError("'tasks' must be a JSON array")
-            result = service.add_spec(arguments.work_item_id, specification, tasks)
-        elif arguments.command == "revise_spec":
+            if arguments.command == "add_spec":
+                result = service.add_spec(arguments.work_item_id, specification, tasks)
+            else:
+                result = service.revise_spec(arguments.work_item_id, specification, tasks)
+        elif arguments.command in {"add_tasks", "add-tasks", "revise_tasks", "revise-tasks"}:
             payload = _read_input(arguments.input)
-            if not isinstance(payload, dict):
-                from .models import SpecificationValidationError
-
-                raise SpecificationValidationError("Revise input must be a JSON object")
-            specification = payload.get("specification")
-            tasks = payload.get("tasks")
-            if not isinstance(specification, dict):
-                from .models import SpecificationValidationError
-
-                raise SpecificationValidationError("'specification' must be a JSON object")
-            if not isinstance(tasks, list):
+            if isinstance(payload, dict):
+                payload = payload.get("tasks")
+            if not isinstance(payload, list):
                 from .models import TaskValidationError
 
-                raise TaskValidationError("'tasks' must be a JSON array")
-            result = service.revise_spec(arguments.work_item_id, specification, tasks)
+                raise TaskValidationError("Input must be a JSON array of tasks")
+            if arguments.command in {"add_tasks", "add-tasks"}:
+                result = service.add_tasks(arguments.work_item_id, payload)
+            else:
+                result = service.revise_tasks(arguments.work_item_id, payload)
         elif arguments.command in {"get_spec", "get-spec"}:
             result = service.get_spec(arguments.work_item_id)
-        elif arguments.command in {"approve_spec", "approve-spec"}:
-            result = service.approve_spec(arguments.work_item_id)
+        elif arguments.command in {"get_plan", "get-plan"}:
+            result = service.get_plan(arguments.work_item_id)
+        elif arguments.command in {"approve_plan", "approve-plan"}:
+            result = service.approve_plan(arguments.work_item_id)
         elif arguments.command in {"get_task", "get-task"}:
             result = service.get_task(arguments.work_item_id, arguments.task_id)
         elif arguments.command in {"record_activity", "record-activity"}:
