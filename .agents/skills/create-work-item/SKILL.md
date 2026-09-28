@@ -5,7 +5,7 @@ description: Use when turning a free-text request or Azure DevOps work item into
 
 # Work Item Writing
 
-Use this workflow when the triage agent receives an initial request. The semantic and operation contract in `.agents/resources/work-items.md` is authoritative. Work-item persistence is owned by `python -m tools.work_items`; never inspect or modify its storage directly.
+Use this workflow when the triage agent receives an initial request. The semantic and operation contract in `.agents/resources/work-items.md` is authoritative. Work-item persistence is owned by `python .agents/run.py work_items`; never inspect or modify its storage directly.
 
 ## 1. Normalize the request
 
@@ -40,7 +40,7 @@ Once significant ambiguity has been resolved and the work items are independentl
 2. Include `type`, `request`, and `description` on every object, plus `source` only when the request came from an external system.
 3. For a user story or chore, include `acceptanceCriteria` as an array of independently testable description strings. For a bug, include `stepsToReproduce`, `expectedResult`, and `actualResult`. For documentation, include `content`.
 4. Do not provide IDs, criterion IDs, creation dates, statuses, or specification content; the service owns those fields.
-5. Pass the JSON array to `python -m tools.work_items create-request --input -` through standard input. Do not create a temporary, staging, or request file in the repository.
+5. Pass the JSON array to `python .agents/run.py work_items create-request --input -` through standard input. Do not create a temporary, staging, or request file in the repository.
 6. Treat a nonzero exit code as a blocker. Report the structured error and do not create records manually.
 
 Do not modify existing work items or create any other files. Those are architect and orchestrator responsibilities.
@@ -51,14 +51,14 @@ Record this triage run against every work item it created so the time and token 
 
 1. For each created work-item ID, build a JSON object with `agent: "triage"`, a `result` summarising the intake, and `metrics` containing `durationSeconds`, `inputTokens`, `outputTokens`, `totalTokens`, `model`, and `estimatedCostUsd` for the run.
 2. When one run produced several work items, apportion the run's metrics across them so the sum matches the run rather than recording the full run against each item.
-3. Pass each object to `python -m tools.work_items record_intake {work-item-id} --input -` through standard input. Do not create a staging file.
+3. Pass each object to `python .agents/run.py work_items record_intake {work-item-id} --input -` through standard input. Do not create a staging file.
 4. Treat a nonzero exit code as a blocker. Report the structured error and do not edit stored records manually.
 
 The service timestamps the entry, appends it to the work item's `intake` array, and rolls the metrics into `execution.totals`.
 
 ## 6. Report the result
 
-Report each created work-item ID, type, and request summary from the command result. Present every persisted file as a clickable workspace-relative link using `board/{request-id}/{work-item-id}.work-item.json` so the user can review or manually amend it offline. Do not start or delegate the design phase automatically.
+Report each created work-item ID, type, and request summary from the command result. Present every persisted file as a clickable workspace-relative link using `.agents/board/{request-id}/{work-item-id}.work-item.json` so the user can review or manually amend it offline. Do not start or delegate the design phase automatically.
 
 State that the user may leave the work item in `new` status if it is not satisfactory. For **every** created work item, regardless of type, tell the user that once they are satisfied with the file they can manually run `.agents/prompts/satisfactory-design.prompt.md` against the work-item ID in a new chat session with a fresh context window. Bugs and documentation items go through design too: the architect authors their task plan, just without a specification.
 

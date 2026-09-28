@@ -1,6 +1,6 @@
 # Tasks
 
-This document defines task semantics and task operations for the AI Software Factory. Tasks are first-class entities nested within a work item and are persisted through `python -m tools.work_items`.
+This document defines task semantics and task operations for the AI Software Factory. Tasks are first-class entities nested within a work item and are persisted through `python .agents/run.py work_items`.
 
 ## Purpose
 
@@ -70,7 +70,7 @@ Lifecycle fields, all service-owned:
 
 ## State Machines
 
-Each phase has its own states. `.agents/schemas/task.schema.json` enforces the legal set and `tools/work_items/phases.py` is the transition authority.
+Each phase has its own states. `.agents/schemas/task.schema.json` enforces the legal set and `.agents/tools/work_items/phases.py` is the transition authority.
 
 | Phase | States | Terminal success |
 | --- | --- | --- |
@@ -138,13 +138,13 @@ python -m pip install -r requirements-dev.txt
 Read a task:
 
 ```powershell
-python -m tools.work_items get_task 00001-1 impl-agent-resource
+python .agents/run.py work_items get_task 00001-1 impl-agent-resource
 ```
 
 Record activity:
 
 ```powershell
-python -m tools.work_items record_activity 00001-1 impl-agent-resource --input activity.json
+python .agents/run.py work_items record_activity 00001-1 impl-agent-resource --input activity.json
 ```
 
 `activity.json` must be a task activity payload. The service validates the outcome against the task phase, appends it to history, updates the task state and attempt counter, applies any remediation, and rolls the metrics into `execution.totals`. Supply `failureSignature` alongside a `failed` outcome so no-progress detection works.

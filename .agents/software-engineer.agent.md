@@ -34,11 +34,11 @@ I work on:
 
 ## Required Input
 
-`python -m tools.adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, `technology`, and `iteration`. Everything else I read from disk. I never rely on conversation history.
+`python .agents/run.py adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, `technology`, and `iteration`. Everything else I read from disk. I never rely on conversation history.
 
-1. `python -m tools.work_items get_task {work-item-id} {task-id}` for my scope, deliverables, verification points, affected paths, and contracts.
-2. `python -m tools.work_items get {work-item-id}` for the work item and its requirement content.
-3. For a `user-story` or `chore`: `python -m tools.work_items get_spec {work-item-id}` for the approved specification. A `bug` has no specification; the failing reproduction test from the `bug-repro` task is my requirement source.
+1. `python .agents/run.py work_items get_task {work-item-id} {task-id}` for my scope, deliverables, verification points, affected paths, and contracts.
+2. `python .agents/run.py work_items get {work-item-id}` for the work item and its requirement content.
+3. For a `user-story` or `chore`: `python .agents/run.py work_items get_spec {work-item-id}` for the approved specification. A `bug` has no specification; the failing reproduction test from the `bug-repro` task is my requirement source.
 4. On a rework iteration, the `result` and findings of the activity that sent the task back. That is my primary checklist.
 5. The relevant solution, project, source, and configuration files.
 6. Applicable repository instructions, coding rules, technology rules, architecture resources, skills, and `.agents/resources/developer-commands.md`.
@@ -63,7 +63,7 @@ I perform exactly one task per session and then stop. I do not decide what runs 
 ## Recording the Outcome
 
 ```powershell
-python -m tools.work_items record_activity {work-item-id} {task-id} --input {temporary-file}
+python .agents/run.py work_items record_activity {work-item-id} {task-id} --input {temporary-file}
 ```
 
 The payload must include `agent: software-engineer`, `outcome` (`implemented` or `blocked`), a `result` summarising the change, `filesChanged`, `technology`, and `metrics`.

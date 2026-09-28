@@ -2,7 +2,7 @@
 
 Canonical build, test, and validation commands. Agents must use these rather than inventing their own, because command drift between runs produces spurious failures and triggers unnecessary remediation loops.
 
-> **Status:** the software-factory framework lives under `.agents/` and `tools/`, with sample projects under `playground/`. The .NET commands below target the playground solution and must be confirmed against the real solution file for any other work. Any agent that has to deviate from this document must record the command it actually ran, and why, in its activity `result`.
+> **Status:** the software-factory framework and its Python tools live under `.agents/`, with sample projects under `playground/`. The .NET commands below target the playground solution and must be confirmed against the real solution file for any other work. Any agent that has to deviate from this document must record the command it actually ran, and why, in its activity `result`.
 
 ## Shell
 
@@ -14,27 +14,27 @@ Run from the repository root. Commands return compact JSON for agent consumption
 
 | Purpose | Command |
 | --- | --- |
-| Create a request from standard input | `python -m tools.work_items create-request --input -` |
-| Retrieve a work item | `python -m tools.work_items get {work-item-id}` |
-| List work items | `python -m tools.work_items list` |
-| Change lifecycle status | `python -m tools.work_items change-status {work-item-id} {status}` |
-| Author a plan with a specification | `python -m tools.work_items add_spec {work-item-id} --input plan.json` |
-| Author a plan without a specification | `python -m tools.work_items add_tasks {work-item-id} --input tasks.json` |
-| Revise a draft plan | `python -m tools.work_items revise_spec {work-item-id} --input plan.json` or `revise_tasks` |
-| Read the plan | `python -m tools.work_items get_plan {work-item-id}` |
-| Approve the plan (human gate) | `python -m tools.work_items approve_plan {work-item-id}` |
-| Read a task | `python -m tools.work_items get_task {work-item-id} {task-id}` |
-| Record an outcome | `python -m tools.work_items record_activity {work-item-id} {task-id} --input activity.json` |
-| Record triage or design intake metrics | `python -m tools.work_items record_intake {work-item-id} --input intake.json` |
+| Create a request from standard input | `python .agents/run.py work_items create-request --input -` |
+| Retrieve a work item | `python .agents/run.py work_items get {work-item-id}` |
+| List work items | `python .agents/run.py work_items list` |
+| Change lifecycle status | `python .agents/run.py work_items change-status {work-item-id} {status}` |
+| Author a plan with a specification | `python .agents/run.py work_items add_spec {work-item-id} --input plan.json` |
+| Author a plan without a specification | `python .agents/run.py work_items add_tasks {work-item-id} --input tasks.json` |
+| Revise a draft plan | `python .agents/run.py work_items revise_spec {work-item-id} --input plan.json` or `revise_tasks` |
+| Read the plan | `python .agents/run.py work_items get_plan {work-item-id}` |
+| Approve the plan (human gate) | `python .agents/run.py work_items approve_plan {work-item-id}` |
+| Read a task | `python .agents/run.py work_items get_task {work-item-id} {task-id}` |
+| Record an outcome | `python .agents/run.py work_items record_activity {work-item-id} {task-id} --input activity.json` |
+| Record triage or design intake metrics | `python .agents/run.py work_items record_intake {work-item-id} --input intake.json` |
 | Run work-item tests | `python -m pytest tests/work_items -q` |
 
 ## ADLC Routing
 
 | Purpose | Command |
 | --- | --- |
-| Ask what happens next | `python -m tools.adlc next {work-item-id}` |
-| Report work-item progress and metrics | `python -m tools.adlc status {work-item-id}` |
-| Check an agent's changed files against the ownership guard | `python -m tools.adlc guard {agent} {files...}` |
+| Ask what happens next | `python .agents/run.py adlc next {work-item-id}` |
+| Report work-item progress and metrics | `python .agents/run.py adlc status {work-item-id}` |
+| Check an agent's changed files against the ownership guard | `python .agents/run.py adlc guard {agent} {files...}` |
 | Run routing and failsafe tests | `python -m pytest tests/adlc -q` |
 
 ## .NET

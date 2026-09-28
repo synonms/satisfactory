@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any, NoReturn, TextIO
 
-from .factory import create_service
+from .factory import DEFAULT_BOARD_ROOT, create_service
 from .models import WorkItemError, WorkItemStatus, WorkItemType
 
 EXIT_CODES = {
@@ -27,8 +27,8 @@ class JsonArgumentParser(argparse.ArgumentParser):
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = JsonArgumentParser(prog="python -m tools.work_items")
-    parser.add_argument("--board-root", type=Path, default=Path("board"))
+    parser = JsonArgumentParser(prog="python .agents/run.py work_items")
+    parser.add_argument("--board-root", type=Path, default=DEFAULT_BOARD_ROOT)
     commands = parser.add_subparsers(dest="command", required=True)
 
     create = commands.add_parser("create-request", aliases=["create"])

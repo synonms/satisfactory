@@ -1,6 +1,6 @@
 # Work Items
 
-This document defines the work-item semantics and agent-facing operations for the AI Software Factory. Agents must use `python -m tools.work_items` for persistence operations and must never read or modify stored records directly. After creation, triage may link the persisted JSON files for human offline review.
+This document defines the work-item semantics and agent-facing operations for the AI Software Factory. Agents must use `python .agents/run.py work_items` for persistence operations and must never read or modify stored records directly. After creation, triage may link the persisted JSON files for human offline review.
 
 ## Purpose
 
@@ -78,18 +78,18 @@ Commands emit a JSON success envelope to stdout. Failures emit a structured JSON
 Install the repository tooling once with `python -m pip install -r requirements-dev.txt` before calling these operations.
 
 ```powershell
-python -m tools.work_items create-request --input -
-python -m tools.work_items get 00001-1
-python -m tools.work_items list --status new --type user-story --request-id 00001
-python -m tools.work_items change-status 00001-1 in-progress
-python -m tools.work_items get_task 00001-1 impl-agent-resource
-python -m tools.work_items record_activity 00001-1 impl-agent-resource --input activity.json
-python -m tools.work_items record_intake 00001-1 --input -
+python .agents/run.py work_items create-request --input -
+python .agents/run.py work_items get 00001-1
+python .agents/run.py work_items list --status new --type user-story --request-id 00001
+python .agents/run.py work_items change-status 00001-1 in-progress
+python .agents/run.py work_items get_task 00001-1 impl-agent-resource
+python .agents/run.py work_items record_activity 00001-1 impl-agent-resource --input activity.json
+python .agents/run.py work_items record_intake 00001-1 --input -
 ```
 
 Creation input is a JSON array in decomposition order. Every item requires `type`, `request`, and `description`; `source` is optional. Do not provide `id`, `created`, or `status`.
 
-Triage supplies creation input through standard input with `--input -`; it must not create a temporary or staging file in the repository. The JSON adapter stores each created item at `board/{request-id}/{work-item-id}.work-item.json`. Triage presents those paths as clickable links for human offline review but does not read or modify the files directly.
+Triage supplies creation input through standard input with `--input -`; it must not create a temporary or staging file in the repository. The JSON adapter stores each created item at `.agents/board/{request-id}/{work-item-id}.work-item.json`. Triage presents those paths as clickable links for human offline review but does not read or modify the files directly.
 
 - User stories and chores require `acceptanceCriteria`, an array of independently verifiable description strings.
 - Every work item includes a service-managed `tasks` array. It is created as `[]` and later populated by the architect's task plan.
@@ -107,7 +107,7 @@ The pre-delivery stages record their own runs against the work item so the whole
 
 - The payload is a JSON object with `agent` (`triage` or `software-architect`), a `result` summarising the run, and a `metrics` object with `durationSeconds`, `inputTokens`, `outputTokens`, `totalTokens`, `model`, and `estimatedCostUsd`.
 - Supply it through standard input with `--input -`; never create a staging file.
-- Intake metrics roll into `execution.totals` exactly like task activity, so `python -m tools.adlc status` reports the full lifecycle cost. They do not consume `execution.budget`, which governs implementation routing only.
+- Intake metrics roll into `execution.totals` exactly like task activity, so `python .agents/run.py adlc status` reports the full lifecycle cost. They do not consume `execution.budget`, which governs implementation routing only.
 - When one triage run produces several work items, apportion the run's metrics across them so the sum matches the run rather than recording the full run against each item.
 - A design run covers a single work item, so it records its full metrics. Record it once, after the plan is approved or after the session ends without approval.
 

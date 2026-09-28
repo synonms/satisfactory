@@ -40,7 +40,7 @@ Created work items have status `new` and `planStatus` of `null`. Every type, inc
 ## Recording Intake Metrics
 
 ```powershell
-python -m tools.work_items record_intake {work-item-id} --input -
+python .agents/run.py work_items record_intake {work-item-id} --input -
 ```
 
 The payload must include `agent: triage`, a `result` summarising the intake, and `metrics`. Apportion the run's metrics across the work items it created so the totals match the run. A nonzero exit code is a blocker: report the structured error and do not modify storage directly.

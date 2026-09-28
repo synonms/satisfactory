@@ -32,7 +32,7 @@ Every work-item type comes through this step, including `bug` and `documentation
 
 ## Output
 
-An approved task plan on the ADLC Kanban board, ready for `python -m tools.adlc next {work_item_id}`, with the design run metrics recorded in `intake` and rolled into `execution.totals`.
+An approved task plan on the ADLC Kanban board, ready for `python .agents/run.py adlc next {work_item_id}`, with the design run metrics recorded in `intake` and rolled into `execution.totals`.
 
 ## Rules
 

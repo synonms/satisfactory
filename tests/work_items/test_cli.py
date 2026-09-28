@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -12,8 +13,8 @@ ROOT = Path(__file__).parents[2]
 def run_cli(board: Path, *arguments: str, input_value: object | None = None) -> subprocess.CompletedProcess[str]:
     command = [
         sys.executable,
-        "-m",
-        "tools.work_items",
+        ".agents/run.py",
+        "work_items",
         "--board-root",
         str(board),
         *arguments,
@@ -56,6 +57,33 @@ def test_cli_creates_and_reads_work_item_across_processes(tmp_path: Path) -> Non
     assert response(created)["data"][0]["id"] == "00001-1"
     assert fetched.returncode == 0
     assert response(fetched)["data"]["request"] == "Document work-item commands"
+
+
+def test_cli_defaults_to_bundled_board(tmp_path: Path) -> None:
+    shutil.copytree(
+        ROOT / ".agents", tmp_path / ".agents", ignore=shutil.ignore_patterns("board", "__pycache__")
+    )
+    created = subprocess.run(
+        [sys.executable, ".agents/run.py", "work_items", "create-request", "--input", "-"],
+        cwd=tmp_path,
+        input=json.dumps(create_input()),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    status = subprocess.run(
+        [sys.executable, ".agents/run.py", "adlc", "status", "00001-1"],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert created.returncode == 0, created.stderr
+    assert (tmp_path / ".agents/board/00001/00001-1.work-item.json").is_file()
+    assert not (tmp_path / "board").exists()
+    assert status.returncode == 0, status.stderr
+    assert json.loads(status.stdout)["data"]["workItemId"] == "00001-1"
 
 
 def test_cli_records_intake_metrics(tmp_path: Path) -> None:
@@ -149,8 +177,8 @@ def test_concurrent_cli_creations_allocate_unique_request_ids(tmp_path: Path) ->
 def test_cli_rejects_an_unknown_configured_backend(tmp_path: Path) -> None:
     command = [
         sys.executable,
-        "-m",
-        "tools.work_items",
+        ".agents/run.py",
+        "work_items",
         "--board-root",
         str(tmp_path / "board"),
         "list",
@@ -254,8 +282,8 @@ def test_cli_get_task_and_record_activity(tmp_path: Path) -> None:
             "technology": "python",
             "outcome": "implemented",
             "result": "Implemented the task commands.",
-            "artifact": "board/00001/tasks/impl-task-commands/changelog.1.md",
-            "filesChanged": ["tools/work_items/cli.py"],
+            "artifact": ".agents/board/00001/tasks/impl-task-commands/changelog.1.md",
+            "filesChanged": [".agents/tools/work_items/cli.py"],
             "metrics": {
                 "durationSeconds": 12,
                 "inputTokens": 100,

@@ -6,14 +6,14 @@ argument-hint: A work item ID from the board.
 
 # Plan Authoring
 
-Use this workflow when the software-architect agent receives a design request. The semantic and operation contracts in `.agents/resources/specifications.md` and `.agents/resources/tasks.md` are authoritative. Persistence is owned by `python -m tools.work_items`; never inspect or modify its storage directly.
+Use this workflow when the software-architect agent receives a design request. The semantic and operation contracts in `.agents/resources/specifications.md` and `.agents/resources/tasks.md` are authoritative. Persistence is owned by `python .agents/run.py work_items`; never inspect or modify its storage directly.
 
 Do not modify existing work-item fields directly or create any other files. Plan changes must only be made through `add_spec`, `revise_spec`, `add_tasks`, `revise_tasks`, and `approve_plan`.
 
 ## 1. Retrieve the work item
 
 - Validate that the work item ID is in the format `{request_id}-{sequence}` where request-id is a 5 digit zero padded number and sequence is an incrementing integer.
-- Retrieve the work item: `python -m tools.work_items get {work_item_id}`
+- Retrieve the work item: `python .agents/run.py work_items get {work_item_id}`
 - If the work item is not found, report the error and stop.
 - Note the `type`. It determines the plan shape:
 
@@ -85,12 +85,12 @@ Do not supply `owner`, `state`, `attempts`, or `history`; the service owns those
 For a `user-story` or `chore`:
 
 - Build the payload `{ "specification": { ... }, "tasks": [ ... ] }`.
-- Write it to a temporary JSON file, call `python -m tools.work_items add_spec {work_item_id} --input {temporary-file}`, and remove the temporary file afterwards.
+- Write it to a temporary JSON file, call `python .agents/run.py work_items add_spec {work_item_id} --input {temporary-file}`, and remove the temporary file afterwards.
 
 For a `bug` or `documentation` item:
 
 - Build a JSON array of task objects.
-- Write it to a temporary JSON file, call `python -m tools.work_items add_tasks {work_item_id} --input {temporary-file}`, and remove the temporary file afterwards.
+- Write it to a temporary JSON file, call `python .agents/run.py work_items add_tasks {work_item_id} --input {temporary-file}`, and remove the temporary file afterwards.
 
 Treat a nonzero exit code as a blocker. Report the structured error and do not create records manually.
 
@@ -104,7 +104,7 @@ Treat a nonzero exit code as a blocker. Report the structured error and do not c
 
 After explicit human approval:
 
-- `python -m tools.work_items approve_plan {work_item_id}`
+- `python .agents/run.py work_items approve_plan {work_item_id}`
 - This is the single gate for every work-item type. Never approve without express user approval.
 - Treat a nonzero exit code as a blocker.
 
@@ -113,7 +113,7 @@ After explicit human approval:
 Record this design run against the work item so the time and token cost of the whole lifecycle is tracked alongside the later implementation steps.
 
 1. Build a JSON object with `agent: "software-architect"`, a `result` summarising the design run, and `metrics` containing `durationSeconds`, `inputTokens`, `outputTokens`, `totalTokens`, `model`, and `estimatedCostUsd` for the run.
-2. Pass it to `python -m tools.work_items record_intake {work_item_id} --input -` through standard input. Do not create a staging file.
+2. Pass it to `python .agents/run.py work_items record_intake {work_item_id} --input -` through standard input. Do not create a staging file.
 3. Record it once per session, whether the plan was approved or left in `draft`.
 4. Treat a nonzero exit code as a blocker. Report the structured error and do not edit stored records manually.
 
@@ -121,7 +121,7 @@ The service timestamps the entry, appends it to the work item's `intake` array, 
 
 ## 9. Report the result
 
-Report the approved plan: the task ids, phases, owners, and dependency order. State that the work item is ready for `python -m tools.adlc next {work_item_id}`.
+Report the approved plan: the task ids, phases, owners, and dependency order. State that the work item is ready for `python .agents/run.py adlc next {work_item_id}`.
 
 If approval could not be obtained, say so and leave the plan in `draft`.
 

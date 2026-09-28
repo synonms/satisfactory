@@ -12,14 +12,14 @@ This file is the entry point for agents working in this repository. Use it to fi
 - **Rules**: `.agents/rules/`
 - **Skills**: `.agents/skills/`
 - **Workflows**: `.agents/workflows/`
-- **Work-item domain and persistence**: `tools/work_items/`
-- **Deterministic ADLC routing and failsafes**: `tools/adlc/`
+- **Work-item domain and persistence**: `.agents/tools/work_items/`
+- **Deterministic ADLC routing and failsafes**: `.agents/tools/adlc/`
 - **Python Script Tests**: `tests/`
 
 ## Agent directory
 - **documentation-writer** - Delivers `documentation` phase tasks against the repository's documentation.
 - **implementation-validator** - Independently validates delivered work against the upstream requirement.
-- **orchestrator** - Dispatches ADLC tasks using the deterministic routing in `tools/adlc`.
+- **orchestrator** - Dispatches ADLC tasks using the deterministic routing in `.agents/tools/adlc`.
 - **quality-assurance-engineer** - Delivers `bug-repro`, `unit-test`, and `integration-test` phase tasks, and handles ad hoc testing work.
 - **reviewer** - Reviews delivered code and tests for user stories and chores.
 - **software-architect** - Authors the task plan for every work item, plus an architectural specification for user stories and chores.

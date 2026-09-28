@@ -35,11 +35,11 @@ I validate:
 
 ## Required Evidence
 
-`python -m tools.adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, and `iteration`. Everything else I read from disk. I never rely on conversation history.
+`python .agents/run.py adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, and `iteration`. Everything else I read from disk. I never rely on conversation history.
 
-1. `python -m tools.work_items get_task {work-item-id} {task-id}` for my scope and verification points.
-2. `python -m tools.work_items get {work-item-id}` for the work item, its requirement content, and the full task list with each task's history and `filesChanged`.
-3. For a `user-story` or `chore`: `python -m tools.work_items get_spec {work-item-id}` for the approved specification.
+1. `python .agents/run.py work_items get_task {work-item-id} {task-id}` for my scope and verification points.
+2. `python .agents/run.py work_items get {work-item-id}` for the work item, its requirement content, and the full task list with each task's history and `filesChanged`.
+3. For a `user-story` or `chore`: `python .agents/run.py work_items get_spec {work-item-id}` for the approved specification.
 4. The delivered change, including relevant source, test, configuration, and documentation files.
 5. Applicable repository instructions, coding rules, and `.agents/resources/developer-commands.md`.
 6. Existing test results, CI output, or known failure records when supplied.
@@ -80,7 +80,7 @@ I record exactly one outcome:
 ## Recording the Outcome
 
 ```powershell
-python -m tools.work_items record_activity {work-item-id} {task-id} --input {temporary-file}
+python .agents/run.py work_items record_activity {work-item-id} {task-id} --input {temporary-file}
 ```
 
 The payload must include `agent: implementation-validator`, the `outcome`, a `result`, `filesChanged: []`, and `metrics`. Include `remediationTargetTaskId` whenever the outcome is `rejected`.

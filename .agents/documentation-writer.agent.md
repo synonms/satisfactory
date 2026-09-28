@@ -34,10 +34,10 @@ I work on:
 
 ## Required Input
 
-`python -m tools.adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, and `iteration`. Everything else I read from disk. I never rely on conversation history.
+`python .agents/run.py adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, and `iteration`. Everything else I read from disk. I never rely on conversation history.
 
-1. `python -m tools.work_items get_task {work-item-id} {task-id}` for my scope, deliverables, verification points, and affected paths.
-2. `python -m tools.work_items get {work-item-id}` for the work item, including its `description` and `content`.
+1. `python .agents/run.py work_items get_task {work-item-id} {task-id}` for my scope, deliverables, verification points, and affected paths.
+2. `python .agents/run.py work_items get {work-item-id}` for the work item, including its `description` and `content`.
 3. On a rework iteration, the `result` and findings of the validation activity that sent the task back.
 4. The source files, configuration, and existing documentation the change describes.
 
@@ -58,7 +58,7 @@ I perform exactly one task per session and then stop. I do not decide what runs 
 ## Recording the Outcome
 
 ```powershell
-python -m tools.work_items record_activity {work-item-id} {task-id} --input {temporary-file}
+python .agents/run.py work_items record_activity {work-item-id} {task-id} --input {temporary-file}
 ```
 
 The payload must include `agent: documentation-writer`, `outcome` (`documented` or `blocked`), a `result` summarising the change, `filesChanged`, and `metrics`.

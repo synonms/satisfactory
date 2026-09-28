@@ -4,9 +4,9 @@ The `adlc` workflow is the orchestration contract for the Agentic Development Li
 
 This document is **descriptive**. The authority for routing is code:
 
-- `tools/work_items/phases.py` owns phase ownership, per-phase state machines, and outcome transitions.
-- `tools/adlc/routing.py` owns task selection.
-- `tools/adlc/policy.py` owns the failsafes.
+- `.agents/tools/work_items/phases.py` owns phase ownership, per-phase state machines, and outcome transitions.
+- `.agents/tools/adlc/routing.py` owns task selection.
+- `.agents/tools/adlc/policy.py` owns the failsafes.
 
 If this document and that code disagree, the code wins and this document is a bug.
 
@@ -16,15 +16,15 @@ Each agent session is a pure function:
 
 > read the task -> perform exactly one step -> record the outcome -> stop.
 
-The **orchestrator** asks `python -m tools.adlc next {work-item-id}` what happens next and dispatches it. It does not reason about routing. Implementing agents perform work and record an outcome. They do not route and they do not change work-item status.
+The **orchestrator** asks `python .agents/run.py adlc next {work-item-id}` what happens next and dispatches it. It does not reason about routing. Implementing agents perform work and record an outcome. They do not route and they do not change work-item status.
 
 This separation is what makes loop termination guaranteed rather than hoped for: an agent cannot reset its own attempt counter or route itself past a guard.
 
 ### Ownership rules
 
-- Only the orchestrator changes a work item's lifecycle status. Use `python -m tools.work_items change-status`.
-- Task state, attempts, remediation, and metrics are all mutated through `python -m tools.work_items record_activity`. Nothing else writes them.
-- Triage and the software architect record their run metrics through `python -m tools.work_items record_intake`, which writes the `intake` history and `execution.totals` only.
+- Only the orchestrator changes a work item's lifecycle status. Use `python .agents/run.py work_items change-status`.
+- Task state, attempts, remediation, and metrics are all mutated through `python .agents/run.py work_items record_activity`. Nothing else writes them.
+- Triage and the software architect record their run metrics through `python .agents/run.py work_items record_intake`, which writes the `intake` history and `execution.totals` only.
 - Implementing agents record an outcome for their own task only. The service rejects an activity whose `agent` is not the task owner.
 - There is no control file. The work item is the single source of truth.
 
@@ -78,7 +78,7 @@ stateDiagram-v2
 
 One cycle:
 
-1. `python -m tools.adlc next {work-item-id}` returns one of `await-approval`, `dispatch`, `block`, `ready-for-user`, or `stop`.
+1. `python .agents/run.py adlc next {work-item-id}` returns one of `await-approval`, `dispatch`, `block`, `ready-for-user`, or `stop`.
 2. On `dispatch`, the orchestrator opens a fresh session for the named `owner` with the returned task id and iteration.
 3. The agent does the work and calls `record_activity` with its outcome and metrics.
 4. Repeat.
@@ -95,13 +95,13 @@ A validator that finds the **requirement itself** is wrong must return `blocked`
 
 ## Failsafes
 
-Attempt caps alone permit an agent to thrash identically three times. All of the following apply together and all are implemented in `tools/adlc/policy.py`.
+Attempt caps alone permit an agent to thrash identically three times. All of the following apply together and all are implemented in `.agents/tools/adlc/policy.py`.
 
 1. **Per-task attempt cap.** `maxTaskAttempts` against the task `attempts` counter.
 2. **Per-edge loop caps.** `maxReviewLoops` and `maxValidationLoops` against the counters in `execution.budget`.
 3. **Global run budget.** `maxTotalAgentRuns` is a hard circuit breaker across the whole work item.
 4. **No-progress detection.** QA supplies `failureSignature` with a `failed` outcome. Two consecutive identical signatures for a task escalate to blocked immediately, regardless of remaining budget. This is the highest-value failsafe: it catches the loop where the same mistake is repeated with cosmetic variation.
-5. **Ownership guard.** `python -m tools.adlc guard {agent} {files...}` rejects a run where `software-engineer` touched tests, `quality-assurance-engineer` touched production code, or `reviewer`/`implementation-validator` touched anything. This prevents the classic failure where an engineer makes a failing test pass by editing the test.
+5. **Ownership guard.** `python .agents/run.py adlc guard {agent} {files...}` rejects a run where `software-engineer` touched tests, `quality-assurance-engineer` touched production code, or `reviewer`/`implementation-validator` touched anything. This prevents the classic failure where an engineer makes a failing test pass by editing the test.
 6. **Test-integrity guard.** Reject a test run in which the total test count decreased unless the agent states an explicit justification. Prevents progress by deletion.
 7. **Blocked is a clean terminal state**, not a failure to retry around. On blocked, append an entry to `execution.escalations` describing the requirement, the evidence, the attempts made, and the recommended human action, then stop.
 
@@ -142,7 +142,7 @@ There is one `software-engineer` agent and one `quality-assurance-engineer` agen
 
 ### Stage 1: orchestrator-assisted (current)
 
-Run `.agents/prompts/satisfactory-implement.prompt.md` against a work item id. It calls `python -m tools.adlc next`, reports the task and owner to run, and states what to do afterwards. Run each agent step in a new chat session to guarantee a fresh context window.
+Run `.agents/prompts/satisfactory-implement.prompt.md` against a work item id. It calls `python .agents/run.py adlc next`, reports the task and owner to run, and states what to do afterwards. Run each agent step in a new chat session to guarantee a fresh context window.
 
 ### Stage 2: automated (planned)
 

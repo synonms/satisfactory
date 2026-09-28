@@ -23,11 +23,11 @@ When no cross-unit behaviour needs proving, the architect omits the `integration
 
 1. The plan requires a specification. `add_spec` supplies the specification and the tasks together, and `approve_plan` gates both behind a human.
 2. Every `implementation` task must have a `review` task downstream of it. The service rejects a plan that does not.
-3. Tasks run in dependency order. `python -m tools.adlc next` picks the first task whose dependencies are all at terminal success. Independent chains are still executed one at a time; parallel execution against a shared working tree is not supported.
+3. Tasks run in dependency order. `python .agents/run.py adlc next` picks the first task whose dependencies are all at terminal success. Independent chains are still executed one at a time; parallel execution against a shared working tree is not supported.
 4. `unit-test` failure returns the same task to `tests-failing` and it is dispatched again. QA must supply `failureSignature` so no-progress detection works.
 5. `review` returning `changes-requested` must name `remediationTargetTaskId`: the implementation task for a production defect, the test task for a test defect. The named task and everything downstream of it reset.
 6. `validation` returning `rejected` must name `remediationTargetTaskId` in the same way.
 7. If the validator finds the requirement itself is wrong, it returns `blocked` rather than `rejected`. A specification defect cannot be fixed by an engineer; it escalates to a human.
-8. When every task reaches terminal success, `tools.adlc next` reports `ready-for-user`.
-9. At `ready-for-user`, final approval requires an explicit human instruction. The orchestrator then runs `python -m tools.work_items change-status {work-item-id} done`.
+8. When every task reaches terminal success, `python .agents/run.py adlc next` reports `ready-for-user`.
+9. At `ready-for-user`, final approval requires an explicit human instruction. The orchestrator then runs `python .agents/run.py work_items change-status {work-item-id} done`.
 10. A human may request remediation at `ready-for-user` only for a requirement already present in the work item or approved specification. Anything else is a new work item.

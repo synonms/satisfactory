@@ -22,7 +22,7 @@ Open a new chat, select the `orchestrator` agent, and run:
 
 `Follow .agents/prompts/satisfactory-implement.prompt.md for work item 00001-1`
 
-The orchestrator asks `python -m tools.adlc next 00001-1` what happens next and reports the task, its owner, and the opening instruction. Then:
+The orchestrator asks `python .agents/run.py adlc next 00001-1` what happens next and reports the task, its owner, and the opening instruction. Then:
 
 1. Open another new chat and select the agent it named.
 2. Paste the opening instruction block verbatim.
@@ -33,7 +33,7 @@ Every step gets its own session, which is what keeps the context window fresh. Y
 
 To see where a work item is at any time:
 
-`python -m tools.adlc status 00001-1`
+`python .agents/run.py adlc status 00001-1`
 
 ## Human gates
 
@@ -54,16 +54,12 @@ Any remediation requested which is out of scope of the original work item or app
 
 ## How the loop terminates
 
-Routing is not a judgement call. `tools/adlc/routing.py` picks the first task whose dependencies have all succeeded, and `tools/adlc/policy.py` enforces the attempt caps, loop caps, run budget, no-progress detection, and ownership guard. Both are unit tested under `tests/adlc`, which is the actual guarantee that a remediation loop cannot run forever.
+Routing is not a judgement call. `.agents/tools/adlc/routing.py` picks the first task whose dependencies have all succeeded, and `.agents/tools/adlc/policy.py` enforces the attempt caps, loop caps, run budget, no-progress detection, and ownership guard. Both are unit tested under `tests/adlc`, which is the actual guarantee that a remediation loop cannot run forever.
 
-### VS Code setup
-`.agents` is not a location VS Code scans by default. `.vscode/settings.json` registers it, so the agents appear in the agent picker and the prompts are available as slash commands:
+### Reuse in another repository
 
-```json
-{
-  "chat.agentFilesLocations": { ".agents": true },
-  "chat.promptFilesLocations": { ".agents/prompts": true }
-}
-```
+Copy the `.agents/` directory to the root of the target repository and install its Python runtime dependencies with `python -m pip install -r .agents/requirements.txt`. Run the bundled CLI from that root, for example `python .agents/run.py work_items list` or `python .agents/run.py adlc next 00001-1`. Work items are stored in `.agents/board/` by default; no root-level `tools/` or `board/` directory is required. Ignore `.agents/board/` in the target repository if work-item records should stay out of version control.
 
-Other harnesses reference the files by path and need no configuration.
+For VS Code/Copilot, merge `.agents/resources/vscode-settings.example.json` into the target repository's `.vscode/settings.json` (or your VS Code user settings). This registers the bundled agents and prompts and optionally auto-approves only the listed read-only commands. VS Code does not load the example from `.agents/` by itself; review the rules before enabling them. Commands that mutate work items, including the human `approve_plan` gate, are deliberately not in the example.
+
+Other harnesses can reference the agent files by path but need their own configuration to discover agents and approve terminal commands.

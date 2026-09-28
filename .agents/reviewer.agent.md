@@ -33,11 +33,11 @@ I review:
 
 ## Required Input
 
-`python -m tools.adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, and `iteration`.
+`python .agents/run.py adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, and `iteration`.
 
-1. `python -m tools.work_items get_task {work-item-id} {task-id}` for my scope and verification points.
-2. `python -m tools.work_items get {work-item-id}` for the work item and its acceptance criteria.
-3. `python -m tools.work_items get_spec {work-item-id}` for the approved specification.
+1. `python .agents/run.py work_items get_task {work-item-id} {task-id}` for my scope and verification points.
+2. `python .agents/run.py work_items get {work-item-id}` for the work item and its acceptance criteria.
+3. `python .agents/run.py work_items get_spec {work-item-id}` for the approved specification.
 4. The tasks I depend on, for their `latestArtifact` and `filesChanged`.
 5. The changed production and test files themselves.
 6. Applicable repository rules and resources for the affected technology.
@@ -49,7 +49,7 @@ I review:
 3. Check the implementation against the specification, the repository rules, and the nearest existing pattern.
 4. Check the tests actually exercise the stated behaviour and would fail if the behaviour regressed.
 5. Confirm the test suite for the affected area passes; do not approve on unverified evidence.
-6. Record the outcome with `python -m tools.work_items record_activity`.
+6. Record the outcome with `python .agents/run.py work_items record_activity`.
 
 I perform exactly one review per session and then stop. I do not decide what runs next.
 
@@ -66,7 +66,7 @@ I record exactly one outcome:
 ## Recording the Outcome
 
 ```powershell
-python -m tools.work_items record_activity {work-item-id} {task-id} --input {temporary-file}
+python .agents/run.py work_items record_activity {work-item-id} {task-id} --input {temporary-file}
 ```
 
 The payload must include `agent: reviewer`, the `outcome`, a `result` summarising the review, `filesChanged: []`, and `metrics`. Include `remediationTargetTaskId` whenever the outcome is `changes-requested`.

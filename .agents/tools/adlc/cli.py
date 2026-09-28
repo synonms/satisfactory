@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Any, NoReturn, TextIO
 
-from tools.work_items.factory import create_service
+from tools.work_items.factory import DEFAULT_BOARD_ROOT, create_service
 from tools.work_items.models import PlanStatus, TaskState, WorkItemError, WorkItemStatus
 
 from . import policy, routing
@@ -29,8 +29,8 @@ class JsonArgumentParser(argparse.ArgumentParser):
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = JsonArgumentParser(prog="python -m tools.adlc")
-    parser.add_argument("--board-root", type=Path, default=Path("board"))
+    parser = JsonArgumentParser(prog="python .agents/run.py adlc")
+    parser.add_argument("--board-root", type=Path, default=DEFAULT_BOARD_ROOT)
     commands = parser.add_subparsers(dest="command", required=True)
 
     next_command = commands.add_parser("next")

@@ -10,9 +10,9 @@ from jsonschema import Draft7Validator, FormatChecker, RefResolver
 
 from .models import WorkItemValidationError
 
-WORK_ITEM_SCHEMA_PATH = Path(__file__).parents[2] / ".agents/schemas/work-item.schema.json"
-SPECIFICATION_SCHEMA_PATH = Path(__file__).parents[2] / ".agents/schemas/specification.schema.json"
-TASK_SCHEMA_PATH = Path(__file__).parents[2] / ".agents/schemas/task.schema.json"
+WORK_ITEM_SCHEMA_PATH = Path(__file__).parents[2] / "schemas/work-item.schema.json"
+SPECIFICATION_SCHEMA_PATH = Path(__file__).parents[2] / "schemas/specification.schema.json"
+TASK_SCHEMA_PATH = Path(__file__).parents[2] / "schemas/task.schema.json"
 
 class Validator:
     def __init__(self, schema_path: Path) -> None:

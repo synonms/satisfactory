@@ -10,7 +10,10 @@ from .models import WorkItemValidationError
 from .service import WorkItemService
 
 
-def create_service(board_root: Path = Path("board"), backend: str | None = None) -> WorkItemService:
+DEFAULT_BOARD_ROOT = Path(__file__).resolve().parents[2] / "board"
+
+
+def create_service(board_root: Path = DEFAULT_BOARD_ROOT, backend: str | None = None) -> WorkItemService:
     selected_backend = backend or os.environ.get("SATISFACTORY_WORK_ITEM_BACKEND", "json")
     if selected_backend == "json":
         return WorkItemService(JsonFileWorkItemRepository(board_root))

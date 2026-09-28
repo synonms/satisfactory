@@ -1,6 +1,6 @@
 # Specifications
 
-This document defines the specification semantics and agent-facing operations for the AI Software Factory. Agents must use `python -m tools.work_items`; persistence is an implementation detail and must never be read or modified directly.
+This document defines the specification semantics and agent-facing operations for the AI Software Factory. Agents must use `python .agents/run.py work_items`; persistence is an implementation detail and must never be read or modified directly.
 
 ## Purpose
 
@@ -51,11 +51,11 @@ Commands emit a JSON success envelope to stdout. Failures emit a structured JSON
 Install the repository tooling once with `python -m pip install -r requirements-dev.txt` before calling these operations.
 
 ```powershell
-python -m tools.work_items add_spec 00001-1 --input request.json
-python -m tools.work_items revise_spec 00001-1 --input request.json
-python -m tools.work_items get_spec 00001-1
-python -m tools.work_items get_plan 00001-1
-python -m tools.work_items approve_plan 00001-1
+python .agents/run.py work_items add_spec 00001-1 --input request.json
+python .agents/run.py work_items revise_spec 00001-1 --input request.json
+python .agents/run.py work_items get_spec 00001-1
+python .agents/run.py work_items get_plan 00001-1
+python .agents/run.py work_items approve_plan 00001-1
 ```
 
 Input for `add_spec` and `revise_spec` is a JSON object with two properties:

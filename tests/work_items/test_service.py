@@ -235,8 +235,8 @@ def test_specification_lifecycle_for_user_story(tmp_path: Path) -> None:
             "technology": "python",
             "outcome": "implemented",
             "result": "implemented",
-            "artifact": "board/00001/tasks/impl-work-items/changelog.1.md",
-            "filesChanged": ["tools/work_items/service.py"],
+            "artifact": ".agents/board/00001/tasks/impl-work-items/changelog.1.md",
+            "filesChanged": [".agents/tools/work_items/service.py"],
             "metrics": metrics(),
         },
     )
