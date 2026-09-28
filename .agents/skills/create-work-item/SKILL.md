@@ -45,7 +45,18 @@ Once significant ambiguity has been resolved and the work items are independentl
 
 Do not modify existing work items or create any other files. Those are architect and orchestrator responsibilities.
 
-## 5. Report the result
+## 5. Record the intake metrics
+
+Record this triage run against every work item it created so the time and token cost of the whole lifecycle is tracked alongside the later implementation steps.
+
+1. For each created work-item ID, build a JSON object with `agent: "triage"`, a `result` summarising the intake, and `metrics` containing `durationSeconds`, `inputTokens`, `outputTokens`, `totalTokens`, `model`, and `estimatedCostUsd` for the run.
+2. When one run produced several work items, apportion the run's metrics across them so the sum matches the run rather than recording the full run against each item.
+3. Pass each object to `python -m tools.work_items record_intake {work-item-id} --input -` through standard input. Do not create a staging file.
+4. Treat a nonzero exit code as a blocker. Report the structured error and do not edit stored records manually.
+
+The service timestamps the entry, appends it to the work item's `intake` array, and rolls the metrics into `execution.totals`.
+
+## 6. Report the result
 
 Report each created work-item ID, type, and request summary from the command result. Present every persisted file as a clickable workspace-relative link using `board/{request-id}/{work-item-id}.work-item.json` so the user can review or manually amend it offline. Do not start or delegate the design phase automatically.
 
@@ -62,4 +73,5 @@ If creation is blocked, report the exact missing input or failed operation and l
 - [ ] No human approval gate was introduced before work-item creation.
 - [ ] Creation input was supplied through standard input without a repository staging file.
 - [ ] The creation command succeeded and returned every work item.
+- [ ] Triage run metrics were recorded against every created work item with `record_intake`.
 - [ ] The final report presents every created work-item ID and persisted file link.

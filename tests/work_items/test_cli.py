@@ -58,6 +58,37 @@ def test_cli_creates_and_reads_work_item_across_processes(tmp_path: Path) -> Non
     assert response(fetched)["data"]["request"] == "Document work-item commands"
 
 
+def test_cli_records_intake_metrics(tmp_path: Path) -> None:
+    board = tmp_path / "board"
+    run_cli(board, "create-request", "--input", "-", input_value=create_input())
+
+    intake = run_cli(
+        board,
+        "record_intake",
+        "00001-1",
+        "--input",
+        "-",
+        input_value={
+            "agent": "software-architect",
+            "result": "Authored the documentation task plan.",
+            "metrics": {
+                "durationSeconds": 30,
+                "inputTokens": 200,
+                "outputTokens": 100,
+                "totalTokens": 300,
+                "model": "gpt-5.3-codex",
+                "estimatedCostUsd": 0.05,
+            },
+        },
+    )
+
+    assert intake.returncode == 0
+    data = response(intake)["data"]
+    assert data["intake"][0]["result"] == "Authored the documentation task plan."
+    assert data["execution"]["totals"]["totalTokens"] == 300
+
+
+
 def test_cli_lists_and_changes_status(tmp_path: Path) -> None:
     board = tmp_path / "board"
     run_cli(board, "create-request", "--input", "-", input_value=create_input())

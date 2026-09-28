@@ -81,6 +81,8 @@ ACTIVITY_COMMON_INPUT_FIELDS = {
     "failureSignature",
     "metrics",
 }
+INTAKE_INPUT_FIELDS = {"agent", "result", "metrics"}
+INTAKE_AGENTS = {"triage", "software-architect"}
 DEFAULT_EXECUTION = {
     "branch": None,
     "budget": {
@@ -239,6 +241,14 @@ class WorkItemService:
         return self._repository.record_activity(work_item_id, task_id, activity, failure_signature)
 
 
+    def record_intake(self, work_item_id: str, input: Mapping[str, Any]) -> WorkItem:
+        if not input:
+            raise TaskValidationError("'record_intake' request must contain an activity payload")
+        self.get(work_item_id)
+        activity = self._build_intake_activity(deepcopy(dict(input)))
+        return self._repository.record_intake(work_item_id, activity)
+
+
     def _author_plan(
         self,
         work_item_id: str,
@@ -309,6 +319,7 @@ class WorkItemService:
         record["tasks"] = []
         record["specification"] = None
         record["planStatus"] = None
+        record["intake"] = []
         record["execution"] = deepcopy(DEFAULT_EXECUTION)
 
         if item_type in {WorkItemType.USER_STORY, WorkItemType.CHORE}:
@@ -548,6 +559,35 @@ class WorkItemService:
 
         failure_signature = item.get("failureSignature")
         return activity, failure_signature
+
+
+    @staticmethod
+    def _build_intake_activity(item: dict[str, Any]) -> dict[str, Any]:
+        unexpected = sorted(set(item) - INTAKE_INPUT_FIELDS)
+        if unexpected:
+            raise TaskValidationError(
+                f"Intake input contains unsupported fields: {', '.join(unexpected)}"
+            )
+
+        agent = item.get("agent")
+        if agent not in INTAKE_AGENTS:
+            allowed = ", ".join(sorted(INTAKE_AGENTS))
+            raise TaskValidationError(f"Intake activity must be recorded by one of: {allowed}")
+
+        result = item.get("result")
+        if not isinstance(result, str) or not result:
+            raise TaskValidationError("Intake activity requires a non-empty 'result'")
+
+        metrics = item.get("metrics")
+        if not isinstance(metrics, Mapping):
+            raise TaskValidationError("Intake activity requires a 'metrics' object")
+
+        return {
+            "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "agent": agent,
+            "result": result,
+            "metrics": dict(metrics),
+        }
 
 
 def _reaches_phase(

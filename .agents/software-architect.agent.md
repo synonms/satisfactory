@@ -25,6 +25,7 @@ The task plan is the contract the rest of the ADLC executes. Every task I write 
 - Put testing expectations in the `verification` field of the relevant test task, not in the specification
 - Make cross-task contracts explicit so agents working on different tasks do not diverge
 - Present the plan for human approval and only then call `approve_plan`
+- Record my own design run metrics against the work item with `record_intake`, so the time and token cost of the whole lifecycle is tracked
 
 ## Plan Shape
 
@@ -64,3 +65,11 @@ Every plan must contain a `validation` task. An `integration-test` task is inclu
 ## Handoff
 
 An approved plan has `planStatus: approved`. The work item is then ready for `python -m tools.adlc next {work-item-id}`.
+
+## Recording Design Metrics
+
+```powershell
+python -m tools.work_items record_intake {work-item-id} --input -
+```
+
+The payload must include `agent: software-architect`, a `result` summarising the design run, and `metrics`. Record it once per session, after approval or after the session ends in `draft`. A nonzero exit code is a blocker: report the structured error and do not modify storage directly.

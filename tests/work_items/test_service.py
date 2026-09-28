@@ -185,6 +185,40 @@ def test_creation_rejects_identity_and_invalid_type_fields(tmp_path: Path) -> No
         manager.create_request([{**story(), "content": "Wrong field."}])
 
 
+def test_intake_activity_is_recorded_and_rolled_into_totals(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    created = manager.create_request([story()])[0]
+    assert created["intake"] == []
+
+    manager.record_intake(
+        created["id"],
+        {"agent": "triage", "result": "Triaged the request.", "metrics": metrics()},
+    )
+    updated = manager.record_intake(
+        created["id"],
+        {"agent": "software-architect", "result": "Authored the plan.", "metrics": metrics()},
+    )
+
+    assert [entry["agent"] for entry in updated["intake"]] == ["triage", "software-architect"]
+    assert updated["execution"]["totals"]["totalTokens"] == 30
+    assert updated["execution"]["totals"]["estimatedCostUsd"] == 0.02
+    assert updated["execution"]["budget"]["totalAgentRuns"] == 0
+
+
+def test_intake_activity_requires_a_known_agent_result_and_metrics(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+
+    with pytest.raises(TaskValidationError):
+        manager.record_intake(work_item_id, {"agent": "orchestrator", "result": "Triaged.", "metrics": metrics()})
+    with pytest.raises(TaskValidationError):
+        manager.record_intake(work_item_id, {"result": "Triaged.", "metrics": metrics()})
+    with pytest.raises(TaskValidationError):
+        manager.record_intake(work_item_id, {"agent": "triage", "result": "Triaged."})
+    with pytest.raises(TaskValidationError):
+        manager.record_intake(work_item_id, {"agent": "triage", "metrics": metrics()})
+
+
 def test_specification_lifecycle_for_user_story(tmp_path: Path) -> None:
     manager = service(tmp_path / "board")
     work_item_id = manager.create_request([story()])[0]["id"]

@@ -108,7 +108,18 @@ After explicit human approval:
 - This is the single gate for every work-item type. Never approve without express user approval.
 - Treat a nonzero exit code as a blocker.
 
-## 8. Report the result
+## 8. Record the design metrics
+
+Record this design run against the work item so the time and token cost of the whole lifecycle is tracked alongside the later implementation steps.
+
+1. Build a JSON object with `agent: "software-architect"`, a `result` summarising the design run, and `metrics` containing `durationSeconds`, `inputTokens`, `outputTokens`, `totalTokens`, `model`, and `estimatedCostUsd` for the run.
+2. Pass it to `python -m tools.work_items record_intake {work_item_id} --input -` through standard input. Do not create a staging file.
+3. Record it once per session, whether the plan was approved or left in `draft`.
+4. Treat a nonzero exit code as a blocker. Report the structured error and do not edit stored records manually.
+
+The service timestamps the entry, appends it to the work item's `intake` array, and rolls the metrics into `execution.totals`.
+
+## 9. Report the result
 
 Report the approved plan: the task ids, phases, owners, and dependency order. State that the work item is ready for `python -m tools.adlc next {work_item_id}`.
 
@@ -125,3 +136,4 @@ If approval could not be obtained, say so and leave the plan in `draft`.
 - [ ] `integration-test` included only where genuinely needed.
 - [ ] Every task carries the deliverables and verification its owner needs.
 - [ ] Plan persisted in `draft` and approved only after explicit user approval.
+- [ ] Design run metrics recorded against the work item with `record_intake`.

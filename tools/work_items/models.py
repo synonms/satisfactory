@@ -9,6 +9,7 @@ WorkItem: TypeAlias = dict[str, Any]
 Specification: TypeAlias = dict[str, Any]
 Task: TypeAlias = dict[str, Any]
 TaskActivity: TypeAlias = dict[str, Any]
+IntakeActivity: TypeAlias = dict[str, Any]
 
 class WorkItemType(str, Enum):
     USER_STORY = "user-story"

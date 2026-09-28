@@ -19,6 +19,7 @@ from .models import (
     WorkItemNotFoundError,
     WorkItemStorageError,
     WorkItemValidationError,
+    IntakeActivity,
     Specification,
     SpecificationNotFoundError,
     SpecificationValidationError,
@@ -216,6 +217,16 @@ class JsonFileWorkItemRepository:
         raise TaskNotFoundError(f"Task {task_id} was not found for work item {work_item_id}")
 
 
+    def record_intake(self, work_item_id: str, activity: IntakeActivity) -> WorkItem:
+        with self._lock():
+            work_item = self.get(work_item_id)
+            work_item.setdefault("intake", []).append(deepcopy(activity))
+            _accumulate_totals(work_item, activity.get("metrics", {}))
+            self._work_item_validator.validate(work_item)
+            self._write_atomic(self._path_for(work_item_id), work_item)
+            return work_item
+
+
     def _next_request_number(self) -> int:
         stored = 0
         id_path = self._board_root / ".id"
@@ -322,9 +333,12 @@ def _apply_remediation(work_item: WorkItem, source: Task, outcome: TaskOutcome) 
 
 def _accumulate(work_item: WorkItem, activity: TaskActivity) -> None:
     execution = work_item["execution"]
-    metrics = activity.get("metrics", {})
-    totals = execution["totals"]
+    _accumulate_totals(work_item, activity.get("metrics", {}))
+    execution["budget"]["totalAgentRuns"] += 1
+
+
+def _accumulate_totals(work_item: WorkItem, metrics: dict[str, Any]) -> None:
+    totals = work_item["execution"]["totals"]
     totals["durationSeconds"] += metrics.get("durationSeconds", 0)
     totals["totalTokens"] += metrics.get("totalTokens", 0)
     totals["estimatedCostUsd"] += metrics.get("estimatedCostUsd", 0)
-    execution["budget"]["totalAgentRuns"] += 1

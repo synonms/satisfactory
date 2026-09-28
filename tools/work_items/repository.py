@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import Any, Protocol
 
-from .models import WorkItem, Specification, Task, TaskActivity
+from .models import WorkItem, IntakeActivity, Specification, Task, TaskActivity
 
 RequestFactory = Callable[[str], Sequence[WorkItem]]
 
@@ -41,3 +41,5 @@ class WorkItemRepository(Protocol):
         activity: TaskActivity,
         failure_signature: str | None = None,
     ) -> Task: ...
+
+    def record_intake(self, work_item_id: str, activity: IntakeActivity) -> WorkItem: ...

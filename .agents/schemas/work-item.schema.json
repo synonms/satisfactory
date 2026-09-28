@@ -52,6 +52,13 @@
       "description": "Approval state of the task plan. The single human gate for every work-item type.",
       "enum": [null, "draft", "approved"]
     },
+    "intake": {
+      "type": "array",
+      "description": "Triage and design runs that produced or amended this work item, with their run metrics.",
+      "items": {
+        "$ref": "#/$defs/intakeActivity"
+      }
+    },
     "execution": {
       "$ref": "#/$defs/execution"
     },
@@ -168,6 +175,28 @@
     "nonNegativeNumber": {
       "type": "number",
       "minimum": 0
+    },
+    "intakeActivity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "agent", "result", "metrics"],
+      "properties": {
+        "ts": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "agent": {
+          "type": "string",
+          "enum": ["triage", "software-architect"]
+        },
+        "result": {
+          "type": "string",
+          "minLength": 1
+        },
+        "metrics": {
+          "$ref": "task.schema.json#/$defs/metrics"
+        }
+      }
     },
     "execution": {
       "type": "object",

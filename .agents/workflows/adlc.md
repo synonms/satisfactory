@@ -24,16 +24,18 @@ This separation is what makes loop termination guaranteed rather than hoped for:
 
 - Only the orchestrator changes a work item's lifecycle status. Use `python -m tools.work_items change-status`.
 - Task state, attempts, remediation, and metrics are all mutated through `python -m tools.work_items record_activity`. Nothing else writes them.
+- Triage and the software architect record their run metrics through `python -m tools.work_items record_intake`, which writes the `intake` history and `execution.totals` only.
 - Implementing agents record an outcome for their own task only. The service rejects an activity whose `agent` is not the task owner.
 - There is no control file. The work item is the single source of truth.
 
 ## Intake and planning
 
-1. `triage` creates one or more work items with status `new`.
+1. `triage` creates one or more work items with status `new`, then records its run metrics against each of them with `record_intake`.
 2. `software-architect` authors the task plan for **every** work-item type:
    - `user-story` and `chore`: a specification plus tasks, via `add_spec`.
    - `bug` and `documentation`: tasks only, via `add_tasks`. These types have no specification.
 3. A human approves the plan via `approve_plan`. This is the only planning gate and it applies to all types.
+4. `software-architect` records its design run metrics with `record_intake`.
 
 No task can be dispatched or record activity until `planStatus` is `approved`.
 

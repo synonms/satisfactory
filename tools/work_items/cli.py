@@ -80,6 +80,10 @@ def build_parser() -> argparse.ArgumentParser:
     record_activity.add_argument("task_id")
     record_activity.add_argument("--input", default="-")
 
+    record_intake = commands.add_parser("record_intake", aliases=["record-intake"])
+    record_intake.add_argument("work_item_id")
+    record_intake.add_argument("--input", default="-")
+
     return parser
 
 
@@ -151,6 +155,13 @@ def main(argv: list[str] | None = None) -> int:
 
                 raise TaskValidationError("record_activity input must be a JSON object")
             result = service.record_activity(arguments.work_item_id, arguments.task_id, payload)
+        elif arguments.command in {"record_intake", "record-intake"}:
+            payload = _read_input(arguments.input)
+            if not isinstance(payload, dict):
+                from .models import TaskValidationError
+
+                raise TaskValidationError("record_intake input must be a JSON object")
+            result = service.record_intake(arguments.work_item_id, payload)
         else:
             from .models import SpecificationValidationError
             raise SpecificationValidationError(f"Unknown command: {arguments.command}")

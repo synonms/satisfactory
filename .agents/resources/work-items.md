@@ -63,9 +63,10 @@ The only allowed transitions are `new -> in-progress`, `in-progress -> done`, an
 Every work item carries two service-managed fields beyond its requirement content.
 
 - `planStatus`: `null`, `draft`, or `approved`. The single human gate for every work-item type. No task may record activity while it is `null` or `draft`.
+- `intake`: pre-delivery runs recorded against the work item. Each entry carries `ts`, `agent` (`triage` or `software-architect`), `result`, and the same `metrics` object used by task activity.
 - `execution`: the routing budget, cumulative metrics, and escalations.
   - `budget`: `maxTaskAttempts`, `maxReviewLoops`, `maxValidationLoops`, `maxTotalAgentRuns`, plus the `reviewLoops`, `validationLoops`, and `totalAgentRuns` counters.
-  - `totals`: `durationSeconds`, `totalTokens`, `estimatedCostUsd`, accumulated from every task activity.
+  - `totals`: `durationSeconds`, `totalTokens`, `estimatedCostUsd`, accumulated from triage intake and every task activity.
   - `escalations`: why the work item was blocked and what a human should do.
 
 There is no separate control file. The work item is the only source of truth for routing.
@@ -83,6 +84,7 @@ python -m tools.work_items list --status new --type user-story --request-id 0000
 python -m tools.work_items change-status 00001-1 in-progress
 python -m tools.work_items get_task 00001-1 impl-agent-resource
 python -m tools.work_items record_activity 00001-1 impl-agent-resource --input activity.json
+python -m tools.work_items record_intake 00001-1 --input -
 ```
 
 Creation input is a JSON array in decomposition order. Every item requires `type`, `request`, and `description`; `source` is optional. Do not provide `id`, `created`, or `status`.
@@ -92,11 +94,22 @@ Triage supplies creation input through standard input with `--input -`; it must 
 - User stories and chores require `acceptanceCriteria`, an array of independently verifiable description strings.
 - Every work item includes a service-managed `tasks` array. It is created as `[]` and later populated by the architect's task plan.
 - Every work item includes a service-managed `planStatus`, created as `null`, and a service-managed `execution` block.
+- Every work item includes a service-managed `intake` array, created as `[]`, holding the triage and design runs recorded against it.
 - User stories and chores include a service-managed `specification` field, created as `null`. Bugs and documentation items must keep it `null`; the service and schema reject a specification on those types.
 - Bugs require `stepsToReproduce`, `expectedResult`, and `actualResult`.
 - Documentation items require `content` describing what must be produced or updated.
 
-Triage may call `create-request`, `get`, and `list`. The orchestrator may call `get`, `list`, and `change-status`. Implementing agents may call `get`, `get_task`, `get_spec`, `get_plan`, and `record_activity`.
+Triage may call `create-request`, `get`, `list`, and `record_intake`. The orchestrator may call `get`, `list`, and `change-status`. The software architect may call `record_intake` alongside its plan-authoring commands. Implementing agents may call `get`, `get_task`, `get_spec`, `get_plan`, and `record_activity`.
+
+## Intake Metrics
+
+The pre-delivery stages record their own runs against the work item so the whole lifecycle cost is visible, not just the implementation phase. Triage records its intake run, and the software architect records its design run.
+
+- The payload is a JSON object with `agent` (`triage` or `software-architect`), a `result` summarising the run, and a `metrics` object with `durationSeconds`, `inputTokens`, `outputTokens`, `totalTokens`, `model`, and `estimatedCostUsd`.
+- Supply it through standard input with `--input -`; never create a staging file.
+- Intake metrics roll into `execution.totals` exactly like task activity, so `python -m tools.adlc status` reports the full lifecycle cost. They do not consume `execution.budget`, which governs implementation routing only.
+- When one triage run produces several work items, apportion the run's metrics across them so the sum matches the run rather than recording the full run against each item.
+- A design run covers a single work item, so it records its full metrics. Record it once, after the plan is approved or after the session ends without approval.
 
 ## Authoring Rules
 

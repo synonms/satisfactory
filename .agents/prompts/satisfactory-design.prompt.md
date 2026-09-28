@@ -28,13 +28,15 @@ Every work-item type comes through this step, including `bug` and `documentation
 6. Present the prepared plan for human review.
 7. Apply requested changes with `revise_spec` or `revise_tasks` and re-present. Repeat until the reviewer approves.
 8. Call `approve_plan`. Do NOT approve without express approval from the reviewer. If the reviewer rejects or cancels the request, or begins a new request, leave the plan in `draft`.
+9. Record the metrics for this design run against the work item with `record_intake`, whether or not the plan was approved.
 
 ## Output
 
-An approved task plan on the ADLC Kanban board, ready for `python -m tools.adlc next {work_item_id}`.
+An approved task plan on the ADLC Kanban board, ready for `python -m tools.adlc next {work_item_id}`, with the design run metrics recorded in `intake` and rolled into `execution.totals`.
 
 ## Rules
 
 - Do not implement any of the requested changes yourself.
 - Do not author a specification for a `bug` or `documentation` work item.
+- Do not create temporary or staging files in the repository; supply input to the work-item CLI through standard input.
 - Do not delegate any work to other agents or try to trigger any process flows.

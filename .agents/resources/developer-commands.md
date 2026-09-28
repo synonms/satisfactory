@@ -25,6 +25,7 @@ Run from the repository root. Commands return compact JSON for agent consumption
 | Approve the plan (human gate) | `python -m tools.work_items approve_plan {work-item-id}` |
 | Read a task | `python -m tools.work_items get_task {work-item-id} {task-id}` |
 | Record an outcome | `python -m tools.work_items record_activity {work-item-id} {task-id} --input activity.json` |
+| Record triage or design intake metrics | `python -m tools.work_items record_intake {work-item-id} --input intake.json` |
 | Run work-item tests | `python -m pytest tests/work_items -q` |
 
 ## ADLC Routing
