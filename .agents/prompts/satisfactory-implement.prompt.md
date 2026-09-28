@@ -27,13 +27,13 @@ A work item id in format `{request_id}-{sequence}` where request-id is a 5 digit
    - `stop`: report the reason and stop.
 5. After the subagent reports back, retrieve the dispatched task and verify that the subagent recorded an activity for the expected iteration. If it did not, report the failed dispatch and stop rather than recording activity on its behalf.
 6. Run `python .agents/run.py adlc guard {agent} {files...}` against that activity's `filesChanged`. Reject the run if the guard fails.
-7. Commit the accepted run, then immediately return to step 4 in this same orchestrator session. Continue until the CLI returns `await-approval`, `block`, `ready-for-user`, or `stop`.
+7. Commit the accepted run. The **very next tool call** must be `python .agents/run.py adlc next {work_item_id}`, returning to step 4 in this same orchestrator session. Do not create a todo for this call, defer it to another turn, or emit a final response between routing cycles. Continue until the CLI returns `await-approval`, `block`, `ready-for-user`, or `stop`.
 
 ## Output
 
-Report the action taken, the task dispatched and its owner, and the resulting state.
+Produce the final report only after the routing loop reaches `await-approval`, `block`, `ready-for-user`, or `stop`. A successful task commit is an intermediate result, not an output boundary.
 
-Include the work item id, type, status, plan status, the task list with phases and states, budget consumption against each cap, and cumulative execution metrics from `python .agents/run.py adlc status {work_item_id}`.
+In that final report, include the actions taken, tasks dispatched and their owners, resulting state, work item id, type, status, plan status, task list with phases and states, budget consumption against each cap, and cumulative execution metrics from `python .agents/run.py adlc status {work_item_id}`.
 
 ## Rules
 
@@ -42,3 +42,4 @@ Include the work item id, type, status, plan status, the task list with phases a
 - Do not invent transitions or override the CLI's decision.
 - Do not record task activity on an agent's behalf.
 - Do not stop after a successful dispatch while another task is routable.
+- Do not use a todo item as a substitute for executing the next routing cycle.

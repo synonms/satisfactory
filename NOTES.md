@@ -344,3 +344,9 @@ flowchart TD
 ## Sample request
 
 In the .NET playground project, add a string property named Speciality to AgentResource with a default value of "stuff", preserve it through the existing contract/API flow, and display the value in the UI.
+
+
+## TODO
+
+- Move `dotnet test` to code
+- Move `dotnet build` to code

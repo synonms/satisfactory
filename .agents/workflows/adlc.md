@@ -81,7 +81,8 @@ One cycle:
 1. `python .agents/run.py adlc next {work-item-id}` returns one of `await-approval`, `dispatch`, `block`, `ready-for-user`, or `stop`.
 2. On `dispatch`, the orchestrator invokes the named `owner` as a subagent in a fresh session with the returned work item id, task id, phase, technology, and iteration.
 3. The agent does the work and calls `record_activity` with its outcome and metrics.
-4. The orchestrator waits for the subagent, verifies its recorded activity, runs the ownership guard, commits the accepted run, and repeats without returning control to the user.
+4. The orchestrator waits for the subagent, verifies its recorded activity, runs the ownership guard, and commits the accepted run.
+5. The orchestrator's next tool call is `python .agents/run.py adlc next {work-item-id}`. It does not defer that call to a todo or return control to the user between cycles.
 
 Task selection is simply: the first task in plan order whose dependencies are all at terminal success and whose own state is not terminal. Nothing more clever is needed, which is the point.
 
