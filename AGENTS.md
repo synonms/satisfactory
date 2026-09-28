@@ -24,7 +24,7 @@ This file is the entry point for agents working in this repository. Use it to fi
 - **reviewer** - Reviews delivered code and tests for user stories and chores.
 - **software-architect** - Authors the task plan for every work item, plus an architectural specification for user stories and chores.
 - **software-engineer** - Delivers `implementation` phase tasks using the applicable technology rules and resources.
-- **triage** - Categorises incoming requests and creates approved work items.
+- **triage** - Categorises incoming requests, creates work items, and presents them for offline review.
 
 ## Skills
 - **create-plan** - Turn a work item into an approved task plan on the ADLC board.

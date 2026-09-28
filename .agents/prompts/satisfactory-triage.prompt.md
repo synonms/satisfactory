@@ -20,14 +20,16 @@ A free-text request or Azure DevOps work item id. If the input is a 5 digit numb
 2. If it is a work item id, retrieve the corresponding work item details. If you are unable to retrieve the work item, inform the user and ask them to paste the work item details manually.
 3. If it is a free-text request, categorise it and identify the necessary work items to create.
 4. Ask clarifying questions if any information is missing or ambiguous.
-5. Prepare the work items for creation on the ADLC Kanban board, ensuring all required fields are populated.
-6. Record the current state, failsafe check, next step, opening instruction, and transition to apply as per the output format.
+5. Once the scope is sufficiently clear, create the work items on the ADLC Kanban board without requesting human approval.
+6. Present links to the persisted work-item files for offline review. Do not automatically proceed to design.
 
 ## Output
 
-One or more work items to be created on the ADLC Kanban board. All new work items initialize with `specification: null`, an empty `tasks` array, and `planStatus: null`. Every type, including `bug` and `documentation`, goes to the `software-architect` next for task-plan authoring.
+One or more work items created on the ADLC Kanban board, with each persisted file presented to the user for offline review. All new work items initialize with `specification: null`, an empty `tasks` array, and `planStatus: null`. If the user chooses to proceed, every type, including `bug` and `documentation`, goes to the `software-architect` next for task-plan authoring.
 
 ## Rules
 
 - Do not implement any of the requested changes yourself, simply analyse and create the work items.
+- Do not seek human approval before creating a work item once its scope is clear.
+- Do not create temporary or staging files in the repository; supply creation input to the work-item CLI through standard input.
 - Do not delegate any work to other agents or try to trigger any process flows.

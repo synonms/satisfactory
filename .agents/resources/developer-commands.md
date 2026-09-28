@@ -14,7 +14,7 @@ Run from the repository root. Commands return compact JSON for agent consumption
 
 | Purpose | Command |
 | --- | --- |
-| Create an approved request | `python -m tools.work_items create-request --input request.json` |
+| Create a request from standard input | `python -m tools.work_items create-request --input -` |
 | Retrieve a work item | `python -m tools.work_items get {work-item-id}` |
 | List work items | `python -m tools.work_items list` |
 | Change lifecycle status | `python -m tools.work_items change-status {work-item-id} {status}` |

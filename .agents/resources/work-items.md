@@ -1,6 +1,6 @@
 # Work Items
 
-This document defines the work-item semantics and agent-facing operations for the AI Software Factory. Agents must use `python -m tools.work_items`; persistence is an implementation detail and must never be read or modified directly.
+This document defines the work-item semantics and agent-facing operations for the AI Software Factory. Agents must use `python -m tools.work_items` for persistence operations and must never read or modify stored records directly. After creation, triage may link the persisted JSON files for human offline review.
 
 ## Purpose
 
@@ -46,7 +46,7 @@ The `Status` field is the storage-independent lifecycle value. Future adapters m
 
 ## State Management Process
 
-1. The `triage` agent creates approved work items with status `new` through `create-request`.
+1. The `triage` agent creates work items with status `new` through `create-request` once their scope is sufficiently clear. Work-item creation has no human approval gate.
 2. The `software-architect` authors the task plan. `planStatus` becomes `draft`.
 3. A human approves the plan through `approve_plan`. `planStatus` becomes `approved`.
 4. The orchestrator starts the ADLC workflow and changes the status to `in-progress` through `change-status`.
@@ -77,7 +77,7 @@ Commands emit a JSON success envelope to stdout. Failures emit a structured JSON
 Install the repository tooling once with `python -m pip install -r requirements-dev.txt` before calling these operations.
 
 ```powershell
-python -m tools.work_items create-request --input request.json
+python -m tools.work_items create-request --input -
 python -m tools.work_items get 00001-1
 python -m tools.work_items list --status new --type user-story --request-id 00001
 python -m tools.work_items change-status 00001-1 in-progress
@@ -85,7 +85,9 @@ python -m tools.work_items get_task 00001-1 impl-agent-resource
 python -m tools.work_items record_activity 00001-1 impl-agent-resource --input activity.json
 ```
 
-Creation input is a JSON array in proposal order. Every item requires `type`, `request`, and `description`; `source` is optional. Do not provide `id`, `created`, or `status`.
+Creation input is a JSON array in decomposition order. Every item requires `type`, `request`, and `description`; `source` is optional. Do not provide `id`, `created`, or `status`.
+
+Triage supplies creation input through standard input with `--input -`; it must not create a temporary or staging file in the repository. The JSON adapter stores each created item at `board/{request-id}/{work-item-id}.work-item.json`. Triage presents those paths as clickable links for human offline review but does not read or modify the files directly.
 
 - User stories and chores require `acceptanceCriteria`, an array of independently verifiable description strings.
 - Every work item includes a service-managed `tasks` array. It is created as `[]` and later populated by the architect's task plan.
@@ -102,4 +104,5 @@ Triage may call `create-request`, `get`, and `list`. The orchestrator may call `
 - Split a request into as many independently deliverable work items as needed.
 - Acceptance criteria must be testable without relying on conversation history.
 - Each work item has exactly one type.
+- A user may manually amend a newly created work-item file before starting design, or leave it in `new` status without proceeding.
 - Do not change existing acceptance criteria or scope after ADLC work begins; create a new work item for new scope.
