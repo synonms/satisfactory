@@ -42,6 +42,8 @@ You are asked to intervene at exactly two points:
 1. **Plan approval** — `planStatus` `draft → approved`, for every work-item type.
 2. **Final acceptance** — at `ready-for-user`, after every task has succeeded.
 
+Record plan approval with `python .agents/run.py work_items approve_plan {work_item_id}`.
+
 On final approval, the work-item status changes to `done`. If there are issues with the implementation, the practical wording for a valid remediation request is:
 
 ```

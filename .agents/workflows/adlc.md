@@ -79,9 +79,9 @@ stateDiagram-v2
 One cycle:
 
 1. `python .agents/run.py adlc next {work-item-id}` returns one of `await-approval`, `dispatch`, `block`, `ready-for-user`, or `stop`.
-2. On `dispatch`, the orchestrator opens a fresh session for the named `owner` with the returned task id and iteration.
+2. On `dispatch`, the orchestrator invokes the named `owner` as a subagent in a fresh session with the returned work item id, task id, phase, technology, and iteration.
 3. The agent does the work and calls `record_activity` with its outcome and metrics.
-4. Repeat.
+4. The orchestrator waits for the subagent, verifies its recorded activity, runs the ownership guard, commits the accepted run, and repeats without returning control to the user.
 
 Task selection is simply: the first task in plan order whose dependencies are all at terminal success and whose own state is not terminal. Nothing more clever is needed, which is the point.
 
@@ -140,9 +140,9 @@ There is one `software-engineer` agent and one `quality-assurance-engineer` agen
 
 ## Running the workflow
 
-### Stage 1: orchestrator-assisted (current)
+### Stage 1: chat-orchestrated (current)
 
-Run `.agents/prompts/satisfactory-implement.prompt.md` against a work item id. It calls `python .agents/run.py adlc next`, reports the task and owner to run, and states what to do afterwards. Run each agent step in a new chat session to guarantee a fresh context window.
+Run `.agents/prompts/satisfactory-implement.prompt.md` against a work item id. It calls `python .agents/run.py adlc next`, invokes each returned owner through the agent tool in a fresh subagent session, guards and commits the result, and continues routing. It returns control only when human input is required or routing reaches a terminal condition.
 
 ### Stage 2: automated (planned)
 

@@ -1,4 +1,16 @@
 {
   "chat.agentFilesLocations": { ".agents": true },
-  "chat.promptFilesLocations": { ".agents/prompts": true }
+  "chat.promptFilesLocations": { ".agents/prompts": true },
+  "chat.tools.terminal.autoApprove": {
+    "python .agents/run.py work_items list": true,
+    "/^python \\.agents\/run\\.py work_items (?:get|get_spec|get_plan) [0-9]{5}-[1-9][0-9]*$/": true,
+    "/^python \\.agents\/run\\.py work_items get_task [0-9]{5}-[1-9][0-9]* [A-Za-z0-9_-]+$/": true,
+    "/^python \\.agents\/run\\.py adlc (?:next|status) [0-9]{5}-[1-9][0-9]*$/": true,
+    "git status --short --branch": true,
+    "git diff --check": true,
+    "git diff --stat": true,
+    "git diff --name-only": true,
+    "git branch --show-current": true,
+    "git log -5 --oneline": true
+  }
 }

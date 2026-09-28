@@ -21,12 +21,13 @@ A work item id in format `{request_id}-{sequence}` where request-id is a 5 digit
 3. If the work item is already `done` or `blocked`, report that no further action is required and stop.
 4. `python .agents/run.py adlc next {work_item_id}` and act on the returned action:
    - `await-approval`: tell the user the plan needs approval via `python .agents/run.py work_items approve_plan {work_item_id}` and stop.
-   - `dispatch`: move the work item to `in-progress` if it is still `new`, create the work-item branch if it does not exist, then dispatch the named `owner` in a **new session** with the task id, phase, technology, and iteration from the payload.
+   - `dispatch`: move the work item to `in-progress` if it is still `new`, create the work-item branch if it does not exist, then use the agent tool to invoke the named `owner` as a subagent in a **new session**. Pass the work item id plus the task id, phase, technology, and iteration exactly as returned in the dispatch payload. Wait for the subagent to finish; do not tell the user to invoke it.
    - `block`: append an escalation, `change-status {work_item_id} blocked`, and stop.
    - `ready-for-user`: present the delivery for final human acceptance. On explicit approval, `change-status {work_item_id} done`.
    - `stop`: report the reason and stop.
-5. After an agent reports back, run `python .agents/run.py adlc guard {agent} {files...}` against the files it changed. Reject the run if the guard fails.
-6. Commit the accepted run, then return to step 4.
+5. After the subagent reports back, retrieve the dispatched task and verify that the subagent recorded an activity for the expected iteration. If it did not, report the failed dispatch and stop rather than recording activity on its behalf.
+6. Run `python .agents/run.py adlc guard {agent} {files...}` against that activity's `filesChanged`. Reject the run if the guard fails.
+7. Commit the accepted run, then immediately return to step 4 in this same orchestrator session. Continue until the CLI returns `await-approval`, `block`, `ready-for-user`, or `stop`.
 
 ## Output
 
@@ -37,5 +38,7 @@ Include the work item id, type, status, plan status, the task list with phases a
 ## Rules
 
 - Do not implement tasks yourself; dispatch them to the owner named by the CLI.
+- Dispatch means invoking the named custom agent with the agent tool, not reporting which agent the user should run.
 - Do not invent transitions or override the CLI's decision.
 - Do not record task activity on an agent's behalf.
+- Do not stop after a successful dispatch while another task is routable.
