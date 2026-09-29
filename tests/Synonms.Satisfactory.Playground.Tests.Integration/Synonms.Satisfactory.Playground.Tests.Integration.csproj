@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+        <OutputType>Exe</OutputType>
+        <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.MTP" />
+        <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+        <PackageReference Include="xunit.v3" />
+        <PackageReference Include="NSubstitute" />
+        <PackageReference Include="Aspire.Hosting.Testing" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Synonms.Satisfactory.Playground.Api\Synonms.Satisfactory.Playground.Api.csproj" />
+        <ProjectReference Include="..\..\src\Synonms.Satisfactory.Playground.AppHost\Synonms.Satisfactory.Playground.AppHost.csproj" />
+        <ProjectReference Include="..\..\src\Synonms.Satisfactory.Playground.Contract\Synonms.Satisfactory.Playground.Contract.csproj" />
+    </ItemGroup>
+    
+</Project>

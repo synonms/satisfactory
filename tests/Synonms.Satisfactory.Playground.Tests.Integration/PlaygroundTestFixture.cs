@@ -3,9 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Synonms.Satisfactory.Playground.AppHost;
 
-[assembly: AssemblyFixture(typeof(Synonms.Satisfactory.Playground.Api.Tests.Integration.PlaygroundTestFixture))]
+[assembly: AssemblyFixture(typeof(Synonms.Satisfactory.Playground.Tests.Integration.PlaygroundTestFixture))]
 
-namespace Synonms.Satisfactory.Playground.Api.Tests.Integration;
+namespace Synonms.Satisfactory.Playground.Tests.Integration;
 
 public class PlaygroundTestFixture : IAsyncLifetime
 {

@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Tests/">
+    <Project Path="tests/Synonms.Satisfactory.Playground.Tests.Integration/Synonms.Satisfactory.Playground.Tests.Integration.csproj" />
+  </Folder>
+  <Project Path="src/Synonms.Satisfactory.Playground.Api/Synonms.Satisfactory.Playground.Api.csproj" />
+  <Project Path="src/Synonms.Satisfactory.Playground.AppHost/Synonms.Satisfactory.Playground.AppHost.csproj" />
+  <Project Path="src/Synonms.Satisfactory.Playground.Contract/Synonms.Satisfactory.Playground.Contract.csproj" />
+  <Project Path="src/Synonms.Satisfactory.Playground.ServiceDefaults/Synonms.Satisfactory.Playground.ServiceDefaults.csproj" />
+  <Project Path="src/Synonms.Satisfactory.Playground.Ui/Synonms.Satisfactory.Playground.Ui.csproj" />
+</Solution>

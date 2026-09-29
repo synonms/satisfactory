@@ -6,7 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Synonms.Satisfactory.Playground.AppHost;
 
-namespace Synonms.Satisfactory.Playground.Api.Tests.Integration;
+namespace Synonms.Satisfactory.Playground.Tests.Integration;
 
 public class PlaygroundDistributedApplicationFactory() : DistributedApplicationFactory(typeof(PlaygroundAppHostProject))
 {

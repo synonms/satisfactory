@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
 using Synonms.Satisfactory.Playground.Contract.Features.Agents;
 
-namespace Synonms.Satisfactory.Playground.Api.Tests.Integration.Features.Agents;
+namespace Synonms.Satisfactory.Playground.Tests.Integration.Features.Agents;
 
 public class AgentsTests(PlaygroundTestFixture fixture)
 {

@@ -8,11 +8,13 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <UserSecretsId>86eb0067-c0cc-478e-abb7-81be6c6e0f45</UserSecretsId>
+        <AspireUseCliBundle>false</AspireUseCliBundle>
+        <NoWarn>$(NoWarn);ASPIRE010</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Aspire.Hosting.AppHost" Version="13.5.3" />
-        <PackageReference Include="Aspire.Hosting.MongoDB" Version="13.5.3" />
+        <PackageReference Include="Aspire.Hosting.AppHost" />
+        <PackageReference Include="Aspire.Hosting.MongoDB" />
     </ItemGroup>
 
     <ItemGroup>
