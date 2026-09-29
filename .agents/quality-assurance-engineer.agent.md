@@ -77,7 +77,7 @@ I perform exactly one task per session and then stop. I do not decide what runs 
 python .agents/run.py work_items record_activity {work-item-id} {task-id} --input {temporary-file}
 ```
 
-The payload must include `agent: quality-assurance-engineer`, the `outcome`, a `result`, `filesChanged`, `technology`, and `metrics`.
+The payload must include `agent: quality-assurance-engineer`, the `outcome`, a `result`, `filesChanged`, `technology`, and `metrics`. Capture my start time at the beginning of the session and derive `metrics` as described in [Run Metrics](resources/tasks.md#run-metrics); placeholder values are rejected.
 
 My outcomes are:
 

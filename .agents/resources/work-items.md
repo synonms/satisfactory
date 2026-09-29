@@ -105,7 +105,7 @@ Triage may call `create-request`, `get`, `list`, and `record_intake`. The orches
 
 The pre-delivery stages record their own runs against the work item so the whole lifecycle cost is visible, not just the implementation phase. Triage records its intake run, and the software architect records its design run.
 
-- The payload is a JSON object with `agent` (`triage` or `software-architect`), a `result` summarising the run, and a `metrics` object with `durationSeconds`, `inputTokens`, `outputTokens`, `totalTokens`, `model`, and `estimatedCostUsd`.
+- The payload is a JSON object with `agent` (`triage` or `software-architect`), a `result` summarising the run, and a `metrics` object with `durationSeconds`, `inputTokens`, `outputTokens`, `totalTokens`, `model`, and `estimatedCostUsd`. Derive each value as described in [Run Metrics](tasks.md#run-metrics); placeholder values are rejected.
 - Supply it through standard input with `--input -`; never create a staging file.
 - Intake metrics roll into `execution.totals` exactly like task activity, so `python .agents/run.py adlc status` reports the full lifecycle cost. They do not consume `execution.budget`, which governs implementation routing only.
 - When one triage run produces several work items, apportion the run's metrics across them so the sum matches the run rather than recording the full run against each item.

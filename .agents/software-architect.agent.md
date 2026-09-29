@@ -72,4 +72,4 @@ An approved plan has `planStatus: approved`. The work item is then ready for `py
 python .agents/run.py work_items record_intake {work-item-id} --input -
 ```
 
-The payload must include `agent: software-architect`, a `result` summarising the design run, and `metrics`. Record it once per session, after approval or after the session ends in `draft`. A nonzero exit code is a blocker: report the structured error and do not modify storage directly.
+The payload must include `agent: software-architect`, a `result` summarising the design run, and `metrics` derived as described in [Run Metrics](resources/tasks.md#run-metrics); capture my start time at the beginning of the session. Record it once per session, after approval or after the session ends in `draft`. A nonzero exit code is a blocker: report the structured error and do not modify storage directly.

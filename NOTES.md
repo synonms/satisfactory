@@ -348,5 +348,8 @@ In the .NET playground project, add a string property named Speciality to AgentR
 
 ## TODO
 
-- Move `dotnet test` to code
-- Move `dotnet build` to code
+[x] - BUG: Metrics not captured in task implementations
+[ ] - Less chatty tasks
+[ ] - Move `dotnet test` to code
+[ ] - Move `dotnet build` to code
+

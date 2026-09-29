@@ -101,6 +101,8 @@ Each history entry records one attempt at the task:
   - `model`
   - `estimatedCostUsd`
 
+  See [Run Metrics](#run-metrics) for how to derive each value.
+
 Outcome to state mapping:
 
 | Outcome | Resulting state |
@@ -114,6 +116,17 @@ Outcome to state mapping:
 | `validated` | `validated` |
 | `rejected` | `rejected` |
 | `blocked` | `blocked` |
+
+## Run Metrics
+
+Agents cannot read their own token counters, so metrics are measured where possible and estimated otherwise. Placeholders are rejected: the service returns a `validation_error` for zero tokens, zero duration, a `totalTokens` that is not `inputTokens + outputTokens`, or a `model` such as `unknown`.
+
+- `durationSeconds`: measure it. Capture the UTC start time as your first action (`python -c "import time; print(time.time())"`) and subtract it from the time immediately before recording the outcome.
+- `model`: the model identifier you are running as, as stated in your system context.
+- `inputTokens`: estimate the total context consumed across the session: instructions, work item, files read, and tool output. Use roughly 4 characters per token.
+- `outputTokens`: estimate everything you produced: responses, tool arguments, and file content written. Use roughly 4 characters per token.
+- `totalTokens`: `inputTokens + outputTokens`.
+- `estimatedCostUsd`: tokens multiplied by the model's published per-token prices. Use `0` only when the price is genuinely unknown, and say so in `result`.
 
 ## Remediation
 

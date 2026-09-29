@@ -82,6 +82,15 @@ ACTIVITY_COMMON_INPUT_FIELDS = {
     "metrics",
 }
 INTAKE_INPUT_FIELDS = {"agent", "result", "metrics"}
+METRIC_FIELDS = {
+    "durationSeconds",
+    "inputTokens",
+    "outputTokens",
+    "totalTokens",
+    "model",
+    "estimatedCostUsd",
+}
+PLACEHOLDER_MODELS = {"unknown", "n/a", "na", "none", "null", "model", "tbd"}
 INTAKE_AGENTS = {"triage", "software-architect"}
 DEFAULT_EXECUTION = {
     "branch": None,
@@ -535,6 +544,7 @@ class WorkItemService:
         metrics = item.get("metrics")
         if not isinstance(metrics, Mapping):
             raise TaskValidationError("Activity requires a 'metrics' object")
+        _validate_metrics(metrics)
 
         remediation_target = item.get("remediationTargetTaskId")
         if parsed_outcome in phases.REMEDIATION_OUTCOMES and not remediation_target:
@@ -581,6 +591,7 @@ class WorkItemService:
         metrics = item.get("metrics")
         if not isinstance(metrics, Mapping):
             raise TaskValidationError("Intake activity requires a 'metrics' object")
+        _validate_metrics(metrics)
 
         return {
             "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -588,6 +599,42 @@ class WorkItemService:
             "result": result,
             "metrics": dict(metrics),
         }
+
+
+def _validate_metrics(metrics: Mapping[str, Any]) -> None:
+    """Reject missing or placeholder run metrics; see .agents/resources/tasks.md#run-metrics."""
+    missing = sorted(METRIC_FIELDS - set(metrics))
+    if missing:
+        raise TaskValidationError(f"Metrics are missing required fields: {', '.join(missing)}")
+    unexpected = sorted(set(metrics) - METRIC_FIELDS)
+    if unexpected:
+        raise TaskValidationError(f"Metrics contain unsupported fields: {', '.join(unexpected)}")
+
+    def is_number(value: Any) -> bool:
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+    for field in ("inputTokens", "outputTokens", "totalTokens"):
+        value = metrics[field]
+        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            raise TaskValidationError(
+                f"Metrics field '{field}' must be a positive integer estimate of the run's tokens"
+            )
+    if metrics["totalTokens"] != metrics["inputTokens"] + metrics["outputTokens"]:
+        raise TaskValidationError("Metrics 'totalTokens' must equal inputTokens + outputTokens")
+
+    duration = metrics["durationSeconds"]
+    if not is_number(duration) or duration <= 0:
+        raise TaskValidationError(
+            "Metrics 'durationSeconds' must be a positive number measured from the run's start time"
+        )
+
+    cost = metrics["estimatedCostUsd"]
+    if not is_number(cost) or cost < 0:
+        raise TaskValidationError("Metrics 'estimatedCostUsd' must be a non-negative number")
+
+    model = metrics["model"]
+    if not isinstance(model, str) or model.strip().lower() in PLACEHOLDER_MODELS | {""}:
+        raise TaskValidationError("Metrics 'model' must name the model that performed the run")
 
 
 def _reaches_phase(

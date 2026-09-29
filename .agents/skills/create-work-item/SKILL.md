@@ -49,7 +49,7 @@ Do not modify existing work items or create any other files. Those are architect
 
 Record this triage run against every work item it created so the time and token cost of the whole lifecycle is tracked alongside the later implementation steps.
 
-1. For each created work-item ID, build a JSON object with `agent: "triage"`, a `result` summarising the intake, and `metrics` containing `durationSeconds`, `inputTokens`, `outputTokens`, `totalTokens`, `model`, and `estimatedCostUsd` for the run.
+1. For each created work-item ID, build a JSON object with `agent: "triage"`, a `result` summarising the intake, and `metrics` containing `durationSeconds`, `inputTokens`, `outputTokens`, `totalTokens`, `model`, and `estimatedCostUsd` for the run, derived as described in [Run Metrics](../../resources/tasks.md#run-metrics). Placeholder values are rejected.
 2. When one run produced several work items, apportion the run's metrics across them so the sum matches the run rather than recording the full run against each item.
 3. Pass each object to `python .agents/run.py work_items record_intake {work-item-id} --input -` through standard input. Do not create a staging file.
 4. Treat a nonzero exit code as a blocker. Report the structured error and do not edit stored records manually.

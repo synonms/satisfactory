@@ -83,7 +83,7 @@ I record exactly one outcome:
 python .agents/run.py work_items record_activity {work-item-id} {task-id} --input {temporary-file}
 ```
 
-The payload must include `agent: implementation-validator`, the `outcome`, a `result`, `filesChanged: []`, and `metrics`. Include `remediationTargetTaskId` whenever the outcome is `rejected`.
+The payload must include `agent: implementation-validator`, the `outcome`, a `result`, `filesChanged: []`, and `metrics`. Include `remediationTargetTaskId` whenever the outcome is `rejected`. Capture my start time at the beginning of the session and derive `metrics` as described in [Run Metrics](resources/tasks.md#run-metrics); placeholder values are rejected.
 
 I modify no files. The ownership guard rejects a run where I change anything. I never modify work-item status; the orchestrator owns it.
 

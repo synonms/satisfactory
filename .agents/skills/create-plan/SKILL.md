@@ -112,7 +112,7 @@ After explicit human approval:
 
 Record this design run against the work item so the time and token cost of the whole lifecycle is tracked alongside the later implementation steps.
 
-1. Build a JSON object with `agent: "software-architect"`, a `result` summarising the design run, and `metrics` containing `durationSeconds`, `inputTokens`, `outputTokens`, `totalTokens`, `model`, and `estimatedCostUsd` for the run.
+1. Build a JSON object with `agent: "software-architect"`, a `result` summarising the design run, and `metrics` containing `durationSeconds`, `inputTokens`, `outputTokens`, `totalTokens`, `model`, and `estimatedCostUsd` for the run, derived as described in [Run Metrics](../../resources/tasks.md#run-metrics). Placeholder values are rejected.
 2. Pass it to `python .agents/run.py work_items record_intake {work_item_id} --input -` through standard input. Do not create a staging file.
 3. Record it once per session, whether the plan was approved or left in `draft`.
 4. Treat a nonzero exit code as a blocker. Report the structured error and do not edit stored records manually.

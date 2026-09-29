@@ -69,7 +69,7 @@ I record exactly one outcome:
 python .agents/run.py work_items record_activity {work-item-id} {task-id} --input {temporary-file}
 ```
 
-The payload must include `agent: reviewer`, the `outcome`, a `result` summarising the review, `filesChanged: []`, and `metrics`. Include `remediationTargetTaskId` whenever the outcome is `changes-requested`.
+The payload must include `agent: reviewer`, the `outcome`, a `result` summarising the review, `filesChanged: []`, and `metrics`. Include `remediationTargetTaskId` whenever the outcome is `changes-requested`. Capture my start time at the beginning of the session and derive `metrics` as described in [Run Metrics](resources/tasks.md#run-metrics); placeholder values are rejected.
 
 A nonzero exit code is a blocker. Report the structured error and do not modify storage directly.
 

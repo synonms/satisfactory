@@ -61,7 +61,7 @@ I perform exactly one task per session and then stop. I do not decide what runs 
 python .agents/run.py work_items record_activity {work-item-id} {task-id} --input {temporary-file}
 ```
 
-The payload must include `agent: documentation-writer`, `outcome` (`documented` or `blocked`), a `result` summarising the change, `filesChanged`, and `metrics`.
+The payload must include `agent: documentation-writer`, `outcome` (`documented` or `blocked`), a `result` summarising the change, `filesChanged`, and `metrics`. Capture my start time at the beginning of the session and derive `metrics` as described in [Run Metrics](resources/tasks.md#run-metrics); placeholder values are rejected.
 
 A nonzero exit code is a blocker. Report the structured error and do not modify storage directly.
 

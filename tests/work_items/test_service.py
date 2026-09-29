@@ -219,6 +219,47 @@ def test_intake_activity_requires_a_known_agent_result_and_metrics(tmp_path: Pat
         manager.record_intake(work_item_id, {"agent": "triage", "metrics": metrics()})
 
 
+@pytest.mark.parametrize(
+    "override",
+    [
+        {"durationSeconds": 0, "inputTokens": 0, "outputTokens": 0, "totalTokens": 0, "model": "unknown", "estimatedCostUsd": 0},
+        {"inputTokens": 0, "totalTokens": 5},
+        {"durationSeconds": 0},
+        {"totalTokens": 99},
+        {"model": "unknown"},
+        {"model": ""},
+        {"estimatedCostUsd": -1},
+        {"inputTokens": True, "totalTokens": 6},
+        {"extra": 1},
+    ],
+)
+def test_placeholder_or_invalid_metrics_are_rejected(tmp_path: Path, override: dict) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+    manager.add_spec(work_item_id, specification(), tasks())
+    manager.approve_plan(work_item_id)
+    invalid = {**metrics(), **override}
+
+    with pytest.raises(TaskValidationError):
+        manager.record_activity(
+            work_item_id,
+            "impl-work-items",
+            {"agent": "software-engineer", "outcome": "implemented", "metrics": invalid},
+        )
+    with pytest.raises(TaskValidationError):
+        manager.record_intake(work_item_id, {"agent": "triage", "result": "Triaged.", "metrics": invalid})
+    assert manager.get_task(work_item_id, "impl-work-items")["history"] == []
+
+
+def test_metrics_missing_a_field_are_rejected(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+    incomplete = {key: value for key, value in metrics().items() if key != "model"}
+
+    with pytest.raises(TaskValidationError):
+        manager.record_intake(work_item_id, {"agent": "triage", "result": "Triaged.", "metrics": incomplete})
+
+
 def test_specification_lifecycle_for_user_story(tmp_path: Path) -> None:
     manager = service(tmp_path / "board")
     work_item_id = manager.create_request([story()])[0]["id"]
