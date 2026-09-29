@@ -1,0 +1,205 @@
+@page "/requests/{requestId}/work-items/{workItemId}"
+
+<PageTitle>Work Item</PageTitle>
+
+@if (_workItem is null)
+{
+    <CarbonBlazorLoadingSpinner></CarbonBlazorLoadingSpinner>
+}
+else
+{
+    <CarbonBlazorForm TModel="WorkItemResource" Model="@_workItem" IsReadOnly="true">
+
+        <CarbonBlazorPane Title="Work Item Details">
+            <CarbonBlazorTextInput Label="Id" @bind-Value="@_workItem.Id" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Id)"></CarbonBlazorTextInput>
+            <CarbonBlazorTextInput Label="Type" @bind-Value="@_workItem.Type" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Type)"></CarbonBlazorTextInput>
+            <CarbonBlazorDateTimePicker Label="Created" @bind-Value="@_workItem.Created" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Created)"></CarbonBlazorDateTimePicker>
+            <CarbonBlazorTextInput Label="Status" @bind-Value="@_workItem.Status" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Status)"></CarbonBlazorTextInput>
+            <CarbonBlazorTextInput Label="Request" @bind-Value="@_workItem.Request" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Request)" IsMultiLine="true"></CarbonBlazorTextInput>
+            <CarbonBlazorTextInput Label="Source" @bind-Value="@_workItem.Source" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Source)"></CarbonBlazorTextInput>
+            <CarbonBlazorTextInput Label="Description" @bind-Value="@_workItem.Description" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Description)" IsMultiLine="true"></CarbonBlazorTextInput>
+            <CarbonBlazorTextInput Label="Plan Status" @bind-Value="@_workItem.PlanStatus" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.PlanStatus)"></CarbonBlazorTextInput>
+        </CarbonBlazorPane>
+
+        @if (_workItem.Type is "user-story" or "chore" && _workItem.Specification is not null)
+        {
+            <CarbonBlazorPane Title="Specification">
+                <CarbonBlazorTextInput Label="Status" @bind-Value="@_workItem.Specification.Status" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Specification.Status)"></CarbonBlazorTextInput>
+                <CarbonBlazorTextInput Label="Summary" @bind-Value="@_workItem.Specification.Summary" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Specification.Summary)" IsMultiLine="true"></CarbonBlazorTextInput>
+                <CarbonBlazorTextInput Label="Architectural Summary" @bind-Value="@_workItem.Specification.ArchitecturalSummary" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Specification.ArchitecturalSummary)" IsMultiLine="true"></CarbonBlazorTextInput>
+            </CarbonBlazorPane>
+        }
+
+        @if(_workItem.Type == "bug")
+        {
+            <CarbonBlazorPane Title="Bug Details">
+                <CarbonBlazorTextInput Label="Steps To Reproduce" @bind-Value="@_workItem.StepsToReproduce" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.StepsToReproduce)"></CarbonBlazorTextInput>
+                <CarbonBlazorTextInput Label="Expected Result" @bind-Value="@_workItem.ExpectedResult" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.ExpectedResult)"></CarbonBlazorTextInput>
+                <CarbonBlazorTextInput Label="Actual Result" @bind-Value="@_workItem.ActualResult" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.ActualResult)"></CarbonBlazorTextInput>
+            </CarbonBlazorPane>
+        }
+
+        @if (_workItem.Type == "documentation")
+        {
+            <CarbonBlazorPane Title="Documentation Details">
+                <CarbonBlazorTextInput Label="Content" @bind-Value="@_workItem.Content" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Content)"></CarbonBlazorTextInput>
+            </CarbonBlazorPane>
+        }
+        
+        <CarbonBlazorPane Title="Acceptance Criteria">
+            <CarbonBlazorStructuredList RowSize="CarbonBlazorStructuredListRowSize.Normal">
+                <HeaderCells>
+                    <CarbonBlazorStructuredListHeaderCell>Id</CarbonBlazorStructuredListHeaderCell>
+                    <CarbonBlazorStructuredListHeaderCell>Description</CarbonBlazorStructuredListHeaderCell>
+                </HeaderCells>
+                <DataRows>
+                    @foreach(WorkItemResource.WorkItemAcceptanceCriteria acceptanceCriteria in _workItem.AcceptanceCriteria ?? Enumerable.Empty<WorkItemResource.WorkItemAcceptanceCriteria>())
+                    {
+                        <CarbonBlazorStructuredListDataRow>
+                            <CarbonBlazorStructuredListDataCell>@acceptanceCriteria.Id</CarbonBlazorStructuredListDataCell>
+                            <CarbonBlazorStructuredListDataCell>@acceptanceCriteria.Description</CarbonBlazorStructuredListDataCell>
+                        </CarbonBlazorStructuredListDataRow>
+                    }
+                </DataRows>
+            </CarbonBlazorStructuredList>
+        </CarbonBlazorPane>
+    
+        <CarbonBlazorPane Title="Tasks">
+            <CarbonBlazorDataTable @ref="@_tasksDataTable" TModel="WorkItemResource.TaskResource" Models="@_workItem.Tasks" TotalSize="@_workItem.Tasks.Count" Offset="0" PageLimit="10" ShouldFillPane="true">
+                <ToolbarButtons>
+                    <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.TextOnly" Text="XS" ClickedCallback="@(() => _tasksDataTable.Resize(CarbonBlazorDataTableRowSize.ExtraSmall))"></CarbonBlazorButton>
+                    <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.TextOnly" Text="S" ClickedCallback="@(() => _tasksDataTable.Resize(CarbonBlazorDataTableRowSize.Small))"></CarbonBlazorButton>
+                    <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.TextOnly" Text="M" ClickedCallback="@(() => _tasksDataTable.Resize(CarbonBlazorDataTableRowSize.Medium))"></CarbonBlazorButton>
+                    <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.TextOnly" Text="L" ClickedCallback="@(() => _tasksDataTable.Resize(CarbonBlazorDataTableRowSize.Large))"></CarbonBlazorButton>
+                    <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.TextOnly" Text="XL" ClickedCallback="@(() => _tasksDataTable.Resize(CarbonBlazorDataTableRowSize.ExtraLarge))"></CarbonBlazorButton>
+                </ToolbarButtons>
+                <HeaderRowTemplate>
+                    <CarbonBlazorDataTableHeaderCell>Id</CarbonBlazorDataTableHeaderCell>
+                    <CarbonBlazorDataTableHeaderCell>Owner</CarbonBlazorDataTableHeaderCell>
+                    <CarbonBlazorDataTableHeaderCell></CarbonBlazorDataTableHeaderCell>
+                </HeaderRowTemplate>
+                <DataRowTemplate>
+                    <CarbonBlazorDataTableDataCell>@context.Id</CarbonBlazorDataTableDataCell>
+                    <CarbonBlazorDataTableDataCell>@context.Owner</CarbonBlazorDataTableDataCell>
+                    <CarbonBlazorDataTableDataCell>
+                        <CarbonBlazorButtonSet Style="justify-content: end;">
+                            <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.IconOnly" IconType="CarbonBlazorIconType.Search" ClickedCallback="@(() => ShowTask(context))"></CarbonBlazorButton>
+                        </CarbonBlazorButtonSet>
+                    </CarbonBlazorDataTableDataCell>
+                </DataRowTemplate>
+            </CarbonBlazorDataTable>
+        </CarbonBlazorPane>
+    
+        @if (_workItem.Intake is not null && _workItem.Intake.Count != 0)
+        {
+            <CarbonBlazorPane Title="Intake Activities">
+                <CarbonBlazorStructuredList RowSize="CarbonBlazorStructuredListRowSize.Normal">
+                    <HeaderCells>
+                        <CarbonBlazorStructuredListHeaderCell>Timestamp</CarbonBlazorStructuredListHeaderCell>
+                        <CarbonBlazorStructuredListHeaderCell>Agent</CarbonBlazorStructuredListHeaderCell>
+                        <CarbonBlazorStructuredListHeaderCell>Result</CarbonBlazorStructuredListHeaderCell>
+                        <CarbonBlazorStructuredListHeaderCell>Duration (Seconds)</CarbonBlazorStructuredListHeaderCell>
+                        <CarbonBlazorStructuredListHeaderCell>Total Tokens</CarbonBlazorStructuredListHeaderCell>
+                    </HeaderCells>
+                    <DataRows>
+                        @foreach(WorkItemResource.IntakeActivityResource intakeActivity in _workItem.Intake ?? Enumerable.Empty<WorkItemResource.IntakeActivityResource>())
+                        {
+                            <CarbonBlazorStructuredListDataRow>
+                                <CarbonBlazorStructuredListDataCell>@intakeActivity.Ts</CarbonBlazorStructuredListDataCell>
+                                <CarbonBlazorStructuredListDataCell>@intakeActivity.Agent</CarbonBlazorStructuredListDataCell>
+                                <CarbonBlazorStructuredListDataCell>@intakeActivity.Result</CarbonBlazorStructuredListDataCell>
+                                <CarbonBlazorStructuredListDataCell>@intakeActivity.Metrics.DurationSeconds</CarbonBlazorStructuredListDataCell>
+                                <CarbonBlazorStructuredListDataCell>@intakeActivity.Metrics.TotalTokens</CarbonBlazorStructuredListDataCell>
+                            </CarbonBlazorStructuredListDataRow>
+                        }
+                    </DataRows>
+                </CarbonBlazorStructuredList>
+            </CarbonBlazorPane>
+        }
+
+        <CarbonBlazorPane Title="Execution">
+            <CarbonBlazorTextInput Label="Branch" @bind-Value="@_workItem.Execution.Branch" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Execution.Branch)"></CarbonBlazorTextInput>
+            <CarbonBlazorDecimalInput Label="Duration (s)" @bind-Value="@_workItem.Execution.Totals.DurationSeconds" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Execution.Totals.DurationSeconds)"></CarbonBlazorDecimalInput>
+            <CarbonBlazorNumberInput Label="Total Tokens" @bind-Value="@_workItem.Execution.Totals.TotalTokens" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Execution.Totals.TotalTokens)"></CarbonBlazorNumberInput>
+            <CarbonBlazorDecimalInput Label="Estimated Cost (USD)" @bind-Value="@_workItem.Execution.Totals.EstimatedCostUsd" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _workItem.Execution.Totals.EstimatedCostUsd)"></CarbonBlazorDecimalInput>
+        </CarbonBlazorPane>
+        
+    </CarbonBlazorForm>
+}
+
+<CarbonBlazorModal @ref="_taskModal" Title="Task Details" Size="CarbonBlazorModalSize.Large">
+    @if (_selectedTask is not null)
+    {
+        <CarbonBlazorFieldSet>
+            <CarbonBlazorText Type="CarbonBlazorTextType.Label">Id</CarbonBlazorText>
+            <CarbonBlazorText Type="CarbonBlazorTextType.Body">@_selectedTask.Id</CarbonBlazorText>
+        </CarbonBlazorFieldSet>
+        <CarbonBlazorFieldSet>
+            <CarbonBlazorText Type="CarbonBlazorTextType.Label">Owner</CarbonBlazorText>
+            <CarbonBlazorText Type="CarbonBlazorTextType.Body">@_selectedTask.Owner</CarbonBlazorText>
+        </CarbonBlazorFieldSet>
+        <CarbonBlazorFieldSet>
+            <CarbonBlazorText Type="CarbonBlazorTextType.Label">Phase</CarbonBlazorText>
+            <CarbonBlazorText Type="CarbonBlazorTextType.Body">@_selectedTask.Phase</CarbonBlazorText>
+        </CarbonBlazorFieldSet>
+        <CarbonBlazorFieldSet>
+            <CarbonBlazorText Type="CarbonBlazorTextType.Label">Scope</CarbonBlazorText>
+            <CarbonBlazorText Type="CarbonBlazorTextType.Body">@_selectedTask.Scope</CarbonBlazorText>
+        </CarbonBlazorFieldSet>
+        <CarbonBlazorFieldSet>
+            <CarbonBlazorText Type="CarbonBlazorTextType.Label">State</CarbonBlazorText>
+            <CarbonBlazorText Type="CarbonBlazorTextType.Body">@_selectedTask.State</CarbonBlazorText>
+        </CarbonBlazorFieldSet>
+    }
+</CarbonBlazorModal>
+
+@code {
+    private CarbonBlazorDataTable<WorkItemResource.TaskResource> _tasksDataTable = null!;
+    private CarbonBlazorModal _taskModal = null!;
+    private WorkItemResource? _workItem;
+    private WorkItemResource.TaskResource? _selectedTask;
+
+    [Inject]
+    public required HttpClient HttpClient { get; set; }
+    
+    [Inject]
+    public required INotificationBroker NotificationBroker { get; set; }
+
+    [Inject]
+    public required NavigationManager NavigationManager { get; set; }
+
+    [Parameter]
+    public string RequestId { get; set; } = null!;
+
+    [Parameter]
+    public string WorkItemId { get; set; } = null!;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await RefreshWorkItemAsync();
+    }
+
+    private async Task RefreshWorkItemAsync()
+    {
+        try
+        {
+            _workItem = await HttpClient.GetFromJsonAsync<WorkItemResource>("api/requests/" + RequestId + "/work-items/" + WorkItemId);
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine($"[EXCEPTION] GetWorkItem request failed: {exception.Message}");
+            NotificationBroker.Send("API Error", "GetWorkItem request threw an exception.", CarbonBlazorNotificationStyle.LowContrast, CarbonBlazorNotificationLevel.Error);
+        }
+    }
+
+    private Task ShowTask(WorkItemResource.TaskResource context)
+    {
+        _selectedTask = context;
+        _taskModal.Show();
+        
+        return Task.CompletedTask;
+    }
+
+}
