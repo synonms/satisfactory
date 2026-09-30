@@ -17,4 +17,11 @@
         <ProjectReference Include="..\Synonms.Satisfactory.Playground.Contract\Synonms.Satisfactory.Playground.Contract.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Features\Requests\Pages\Request.razor" />
+      <_ContentIncludedByDefault Remove="Features\Requests\Pages\Requests.razor" />
+      <_ContentIncludedByDefault Remove="Features\Requests\Pages\WorkItem.razor" />
+      <_ContentIncludedByDefault Remove="Features\Requests\_Imports.razor" />
+    </ItemGroup>
+
 </Project>

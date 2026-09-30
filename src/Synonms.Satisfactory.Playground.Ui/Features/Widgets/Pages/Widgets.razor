@@ -1,35 +1,37 @@
-@page "/agents"
+@page "/widgets"
 
-<PageTitle>Agents</PageTitle>
+<PageTitle>Widgets</PageTitle>
 
-<CarbonBlazorPane Title="Agents">
-    @if (_agents is null)
+<CarbonBlazorPane Title="Widgets">
+    @if (_widgets is null)
     {
         <CarbonBlazorLoadingSpinner></CarbonBlazorLoadingSpinner>
     }
     else
     {
-        <CarbonBlazorDataTable @ref="@_dataTable" TModel="AgentResource" Models="@_agents" TotalSize="@_agents.Count" Offset="0" PageLimit="10" ShouldFillPane="true">
+        <CarbonBlazorDataTable @ref="@_dataTable" TModel="WidgetResource" Models="@_widgets" TotalSize="@_widgets.Count" Offset="0" PageLimit="10" ShouldFillPane="true">
             <ToolbarButtons>
                 <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.TextOnly" Text="XS" ClickedCallback="@(() => _dataTable.Resize(CarbonBlazorDataTableRowSize.ExtraSmall))"></CarbonBlazorButton>
                 <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.TextOnly" Text="S" ClickedCallback="@(() => _dataTable.Resize(CarbonBlazorDataTableRowSize.Small))"></CarbonBlazorButton>
                 <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.TextOnly" Text="M" ClickedCallback="@(() => _dataTable.Resize(CarbonBlazorDataTableRowSize.Medium))"></CarbonBlazorButton>
                 <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.TextOnly" Text="L" ClickedCallback="@(() => _dataTable.Resize(CarbonBlazorDataTableRowSize.Large))"></CarbonBlazorButton>
                 <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.TextOnly" Text="XL" ClickedCallback="@(() => _dataTable.Resize(CarbonBlazorDataTableRowSize.ExtraLarge))"></CarbonBlazorButton>
-                <CarbonBlazorButton Display="CarbonBlazorButtonDisplay.TextAndIcon" IconType="CarbonBlazorIconType.Add" Text="Add" ClickedCallback="@CreateAgentAsync"></CarbonBlazorButton>
+                <CarbonBlazorButton Display="CarbonBlazorButtonDisplay.TextAndIcon" IconType="CarbonBlazorIconType.Add" Text="Add" ClickedCallback="@CreateWidgetAsync"></CarbonBlazorButton>
             </ToolbarButtons>
             <HeaderRowTemplate>
+                <CarbonBlazorDataTableHeaderCell>Id</CarbonBlazorDataTableHeaderCell>
                 <CarbonBlazorDataTableHeaderCell>Name</CarbonBlazorDataTableHeaderCell>
-                <CarbonBlazorDataTableHeaderCell>File</CarbonBlazorDataTableHeaderCell>
+                <CarbonBlazorDataTableHeaderCell>Description</CarbonBlazorDataTableHeaderCell>
                 <CarbonBlazorDataTableHeaderCell></CarbonBlazorDataTableHeaderCell>
             </HeaderRowTemplate>
             <DataRowTemplate>
+                <CarbonBlazorDataTableDataCell>@context.Id</CarbonBlazorDataTableDataCell>
                 <CarbonBlazorDataTableDataCell>@context.Name</CarbonBlazorDataTableDataCell>
-                <CarbonBlazorDataTableDataCell>@context.File</CarbonBlazorDataTableDataCell>
+                <CarbonBlazorDataTableDataCell>@context.Description</CarbonBlazorDataTableDataCell>
                 <CarbonBlazorDataTableDataCell>
                     <CarbonBlazorButtonSet Style="justify-content: end;">
-                        <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.IconOnly" IconType="CarbonBlazorIconType.Search" ClickedCallback="@(() => ReadAgent(context))"></CarbonBlazorButton>
-                        <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.IconOnly" IconType="CarbonBlazorIconType.Edit" ClickedCallback="@(() => UpdateAgent(context))"></CarbonBlazorButton>
+                        <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.IconOnly" IconType="CarbonBlazorIconType.Search" ClickedCallback="@(() => ViewWidget(context))"></CarbonBlazorButton>
+                        <CarbonBlazorButton Kind="CarbonBlazorButtonKind.Ghost" Display="CarbonBlazorButtonDisplay.IconOnly" IconType="CarbonBlazorIconType.Edit" ClickedCallback="@(() => EditWidget(context))"></CarbonBlazorButton>
                     </CarbonBlazorButtonSet>
                 </CarbonBlazorDataTableDataCell>
             </DataRowTemplate>
@@ -38,8 +40,8 @@
 </CarbonBlazorPane>
 
 @code {
-    private CarbonBlazorDataTable<AgentResource> _dataTable = null!;
-    private List<AgentResource>? _agents;
+    private CarbonBlazorDataTable<WidgetResource> _dataTable = null!;
+    private List<WidgetResource>? _widgets;
 
     [Inject]
     public required HttpClient HttpClient { get; set; }
@@ -54,37 +56,36 @@
     {
         await base.OnInitializedAsync();
 
-        await RefreshAgentsAsync();
+        await RefreshWidgetsAsync();
     }
 
-    private async Task RefreshAgentsAsync()
+    private async Task RefreshWidgetsAsync()
     {
         try
         {
-            _agents = await HttpClient.GetFromJsonAsync<List<AgentResource>>("api/agents");
+            _widgets = await HttpClient.GetFromJsonAsync<List<WidgetResource>>("api/widgets");
         }
         catch (Exception exception)
         {
-            Console.WriteLine($"[EXCEPTION] GetAgents request failed: {exception.Message}");
-            NotificationBroker.Send("API Error", "GetAgents request threw an exception.", CarbonBlazorNotificationStyle.LowContrast, CarbonBlazorNotificationLevel.Error);
+            Console.WriteLine($"[EXCEPTION] GetWidgets request failed: {exception.Message}");
+            NotificationBroker.Send("API Error", "GetWidgets request threw an exception.", CarbonBlazorNotificationStyle.LowContrast, CarbonBlazorNotificationLevel.Error);
         }
     }
 
-    private Task CreateAgentAsync()
+    private Task CreateWidgetAsync()
     {
         // TODO
-        NotificationBroker.Send("Unsupported", "Creating agents not yet supported.", CarbonBlazorNotificationStyle.LowContrast, CarbonBlazorNotificationLevel.Error);
+        NotificationBroker.Send("Unsupported", "Creating widgets not yet supported.", CarbonBlazorNotificationStyle.LowContrast, CarbonBlazorNotificationLevel.Error);
 
         return Task.CompletedTask;
     }
     
-    private void ReadAgent(AgentResource agent)
-    {
-        NavigationManager.NavigateTo($"/agents/{agent.Id}");
-    }
+    private void ViewWidget(WidgetResource widget) =>
+        NavigationManager.NavigateTo($"/widgets/{widget.Id}");
     
-    private void UpdateAgent(AgentResource agent)
+    private void EditWidget(WidgetResource widget)
     {
-        NavigationManager.NavigateTo($"/agents/{agent.Id}/edit");
+        // TODO
+        NotificationBroker.Send("Unsupported", "Editing widgets not yet supported.", CarbonBlazorNotificationStyle.LowContrast, CarbonBlazorNotificationLevel.Error);
     }
 }

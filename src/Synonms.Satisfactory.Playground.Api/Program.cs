@@ -1,7 +1,4 @@
-using System.Text.Json;
-using Microsoft.AspNetCore.Mvc;
-using Synonms.Satisfactory.Playground.Contract.Features.Agents;
-using Synonms.Satisfactory.Playground.Contract.Features.Requests;
+using Synonms.Satisfactory.Playground.Contract.Features.Widgets;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -22,81 +19,34 @@ builder.Services.AddCors(options =>
 
 WebApplication app = builder.Build();
 
+List<WidgetResource> widgetResources = 
+[
+    new()
+    {
+        Id = "W00001",
+        Name = "Basic Widget",
+        Description = "The entry level widget for the Satisfactory Playground.",
+    },
+    new()
+    {
+        Id = "W00002",
+        Name = "Advanced Widget",
+        Description = "A more capable widget for the Satisfactory Playground.",
+    },
+];
+
 app.UseCors(uiCorsPolicyName);
 app.MapDefaultEndpoints();
 
 app.MapGet("/api", () => "Hello World!");
 
-app.MapGet("/api/requests", () =>
+app.MapGet("/api/widgets", () => widgetResources);
+
+app.MapGet("/api/widgets/{id}", (string id) =>
 {
-    List<RequestResource> requestResources = Directory.EnumerateDirectories(@"c:\Git\Synonms.Satisfactory\.agents\board")
-        .Select(directory => new RequestResource
-        {
-            Id = Path.GetRelativePath(@"c:\Git\Synonms.Satisfactory\.agents\board", directory),
-            WorkItems = Directory.EnumerateFiles(directory, "*.work-item.json")
-                .Select(file => new RequestResource.WorkItemIdentifier
-                {
-                    Id = Path.GetFileName(file).Replace(".work-item.json", "")
-                })
-                .ToList()
-        })
-        .ToList();
+    WidgetResource? widget = widgetResources.FirstOrDefault(w => w.Id == id);
     
-    return requestResources;
-});
-
-app.MapGet("/api/requests/{id}", ([FromRoute] string id) =>
-{
-    if (!Path.Exists(@"c:\Git\Synonms.Satisfactory\.agents\board\" + id))
-    {
-        return Results.NotFound();
-    }
-
-    return Results.Ok(new RequestResource
-    {
-        Id = id,
-        WorkItems = Directory.EnumerateFiles(@"c:\Git\Synonms.Satisfactory\.agents\board\" + id, "*.work-item.json")
-            .Select(file => new RequestResource.WorkItemIdentifier
-            {
-                Id = Path.GetFileName(file).Replace(".work-item.json", "")
-            })
-            .ToList()
-    });
-}).Produces<RequestResource>();
-
-app.MapGet("/api/requests/{requestId}/work-items/{workItemId}", async ([FromRoute] string requestId, [FromRoute] string workItemId, CancellationToken cancellationToken = default) =>
-{
-    string filePath = Path.Combine(@"c:\Git\Synonms.Satisfactory\.agents\board\", requestId, workItemId + ".work-item.json");
-    
-    if (!File.Exists(filePath))
-    {
-        return Results.NotFound();
-    }
-    
-    string json = await File.ReadAllTextAsync(filePath, cancellationToken);
-    
-    WorkItemResource? workItem = JsonSerializer.Deserialize<WorkItemResource>(json, new JsonSerializerOptions
-    {
-        PropertyNameCaseInsensitive = true
-    });
-
-    return Results.Ok(workItem);
-}).Produces<WorkItemResource>();
-
-
-app.MapGet("/api/agents", () =>
-{
-    List<AgentResource> agentResources = 
-    [
-        new()
-        {
-            Id = "request-writer",
-            Name = "Request Writer",
-            File = "request-writer.agent.md"
-        }
-    ];
-    
-    return agentResources;
+    return widget is not null ? Results.Ok(widget) : Results.NotFound();
 });
 
 app.Run();

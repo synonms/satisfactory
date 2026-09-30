@@ -1,0 +1,54 @@
+@page "/widgets/{id}"
+
+<PageTitle>Widget</PageTitle>
+
+<CarbonBlazorPane Title="Widget">
+    @if (_widget is null)
+    {
+        <CarbonBlazorLoadingSpinner></CarbonBlazorLoadingSpinner>
+    }
+    else
+    {
+        <CarbonBlazorForm TModel="WidgetResource" Model="@_widget" IsReadOnly="true" CancelCallback="@(() => NavigationManager.NavigateTo("/widgets"))">
+            <CarbonBlazorTextInput Label="Id" @bind-Value="@_widget.Id" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _widget.Id)"></CarbonBlazorTextInput>
+            <CarbonBlazorTextInput Label="Name" @bind-Value="@_widget.Name" IsReadOnly="true" IsDisabled="true" FieldIdentifier="@FieldIdentifier.Create(() => _widget.Name)"></CarbonBlazorTextInput>
+            <CarbonBlazorTextInput Label="Description" @bind-Value="@_widget.Description" IsReadOnly="true" IsDisabled="true" IsMultiLine="true" FieldIdentifier="@FieldIdentifier.Create(() => _widget.Description)"></CarbonBlazorTextInput>
+        </CarbonBlazorForm>
+    }
+</CarbonBlazorPane>
+
+@code {
+    private WidgetResource? _widget;
+
+    [Inject]
+    public required HttpClient HttpClient { get; set; }
+    
+    [Inject]
+    public required INotificationBroker NotificationBroker { get; set; }
+
+    [Inject]
+    public required NavigationManager NavigationManager { get; set; }
+
+    [Parameter]
+    public required string Id { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await RefreshWidgetAsync();
+    }
+
+    private async Task RefreshWidgetAsync()
+    {
+        try
+        {
+            _widget = await HttpClient.GetFromJsonAsync<WidgetResource>("api/widgets/" + Id);
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine($"[EXCEPTION] GetWidget request failed: {exception.Message}");
+            NotificationBroker.Send("API Error", "GetWidget request threw an exception.", CarbonBlazorNotificationStyle.LowContrast, CarbonBlazorNotificationLevel.Error);
+        }
+    }
+}
