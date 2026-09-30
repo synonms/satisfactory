@@ -147,4 +147,4 @@ Run `.agents/prompts/satisfactory-implement.prompt.md` against a work item id. I
 
 ### Stage 2: automated (planned)
 
-A driver invokes the CLI non-interactively with the selected agent, records the outcome, and commits. Each invocation is a separate process, so fresh context comes for free. The routing and failsafe logic is already unit tested in `tests/adlc/`, which is the actual guarantee that loops terminate.
+A driver invokes the CLI non-interactively with the selected agent, records the outcome, and commits. Each invocation is a separate process, so fresh context comes for free. The routing and failsafe logic is already unit tested in `.agents/tests/adlc/`, which is the actual guarantee that loops terminate.

@@ -5,7 +5,7 @@ import pytest
 from jsonschema import Draft7Validator, FormatChecker, RefResolver
 
 
-ROOT = Path(__file__).parents[2]
+ROOT = Path(__file__).parents[3]
 SCHEMA_PATH = ROOT / ".agents/schemas/work-item.schema.json"
 SCHEMA = json.loads(SCHEMA_PATH.read_text())
 VALIDATOR = Draft7Validator(

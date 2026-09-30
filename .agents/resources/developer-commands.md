@@ -26,7 +26,7 @@ Run from the repository root. Commands return compact JSON for agent consumption
 | Read a task | `python .agents/run.py work_items get_task {work-item-id} {task-id}` |
 | Record an outcome | `python .agents/run.py work_items record_activity {work-item-id} {task-id} --input activity.json` |
 | Record triage or design intake metrics | `python .agents/run.py work_items record_intake {work-item-id} --input intake.json` |
-| Run work-item tests | `python -m pytest tests/work_items -q` |
+| Run work-item tests | `python -m pytest .agents/tests/work_items -q` |
 
 ## ADLC Routing
 
@@ -35,7 +35,7 @@ Run from the repository root. Commands return compact JSON for agent consumption
 | Ask what happens next | `python .agents/run.py adlc next {work-item-id}` |
 | Report work-item progress and metrics | `python .agents/run.py adlc status {work-item-id}` |
 | Check an agent's changed files against the ownership guard | `python .agents/run.py adlc guard {agent} {files...}` |
-| Run routing and failsafe tests | `python -m pytest tests/adlc -q` |
+| Run routing and failsafe tests | `python -m pytest .agents/tests/adlc -q` |
 
 ## Planning and Repository Context
 

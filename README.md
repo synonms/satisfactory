@@ -56,7 +56,7 @@ Any remediation requested which is out of scope of the original work item or app
 
 ## How the loop terminates
 
-Routing is not a judgement call. `.agents/tools/adlc/routing.py` picks the first task whose dependencies have all succeeded, and `.agents/tools/adlc/policy.py` enforces the attempt caps, loop caps, run budget, no-progress detection, and ownership guard. Both are unit tested under `tests/adlc`, which is the actual guarantee that a remediation loop cannot run forever.
+Routing is not a judgement call. `.agents/tools/adlc/routing.py` picks the first task whose dependencies have all succeeded, and `.agents/tools/adlc/policy.py` enforces the attempt caps, loop caps, run budget, no-progress detection, and ownership guard. Both are unit tested under `.agents/tests/adlc`, which is the actual guarantee that a remediation loop cannot run forever.
 
 ### Reuse in another repository
 

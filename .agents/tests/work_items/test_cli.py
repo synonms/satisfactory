@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 
-ROOT = Path(__file__).parents[2]
+ROOT = Path(__file__).parents[3]
 
 
 def run_cli(board: Path, *arguments: str, input_value: object | None = None) -> subprocess.CompletedProcess[str]:
