@@ -35,6 +35,16 @@ To see where a work item is at any time:
 
 `python .agents/run.py adlc status 00001-1`
 
+## Dashboard
+
+From the repository root, run the local dashboard server (Python standard library only):
+
+```powershell
+python .agents/dashboard/serve.py
+```
+
+Open `http://127.0.0.1:8000/dashboard/` in your browser. The read-only dashboard shows work items, tasks, and metrics from `.agents/board/`; use **Refresh** to reload board data. Press Ctrl+C in the terminal to stop the server. If port 8000 is in use, pass `--port 8765` and open `http://127.0.0.1:8765/dashboard/` instead.
+
 ## Human gates
 
 You are asked to intervene at exactly two points:

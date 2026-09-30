@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ADLC Dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%231b2735'/%3E%3Cpath d='M18 18h28v6H18zm0 11h22v6H18zm0 11h30v6H18z' fill='%23e7f0ff'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">ADLC</div>
+          <div>
+            <h1>Dashboard</h1>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <button class="nav-item active" data-view="overview">Overview</button>
+          <button class="nav-item" data-view="requests">Requests</button>
+          <button class="nav-item" data-view="work-items">Work items</button>
+          <button class="nav-item" data-view="tasks">Tasks</button>
+          <button class="nav-item" data-view="blocked">Blocked</button>
+        </nav>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Agentic Development Lifecycle</p>
+            <h2 id="page-title">Overview</h2>
+          </div>
+          <button id="refresh-button" class="primary-button">Refresh</button>
+        </header>
+
+        <section id="overview-view" class="view active">
+          <div id="summary-grid" class="summary-grid"></div>
+
+          <div class="chart-grid">
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Lifecycle status</h3>
+              </div>
+              <svg id="status-chart" class="chart" viewBox="0 0 360 220" preserveAspectRatio="xMidYMid meet"></svg>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Throughput</h3>
+              </div>
+              <svg id="throughput-chart" class="chart" viewBox="0 0 360 220" preserveAspectRatio="xMidYMid meet"></svg>
+            </div>
+          </div>
+
+          <div class="panel table-panel">
+            <div class="panel-header">
+              <h3>Recent escalation activity</h3>
+            </div>
+            <div id="escalations-table" class="table"></div>
+          </div>
+        </section>
+
+        <section id="requests-view" class="view">
+          <div class="panel table-panel">
+            <div class="panel-header">
+              <h3>Requests</h3>
+            </div>
+            <div id="requests-table" class="table"></div>
+          </div>
+        </section>
+
+        <section id="work-items-view" class="view">
+          <div class="panel table-panel">
+            <div class="panel-header">
+              <h3>Work items</h3>
+            </div>
+            <div id="work-items-table" class="table"></div>
+          </div>
+        </section>
+
+        <section id="tasks-view" class="view">
+          <div class="panel table-panel">
+            <div class="panel-header">
+              <h3>Tasks</h3>
+            </div>
+            <div id="tasks-table" class="table"></div>
+          </div>
+        </section>
+
+        <section id="blocked-view" class="view">
+          <div class="panel table-panel">
+            <div class="panel-header">
+              <h3>Blocked items</h3>
+            </div>
+            <div id="blocked-table" class="table"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
