@@ -2,7 +2,7 @@
 
 Canonical build, test, and validation commands. Agents must use these rather than inventing their own, because command drift between runs produces spurious failures and triggers unnecessary remediation loops.
 
-> **Status:** the software-factory framework and its Python tools live under `.agents/`, with sample projects under `playground/`. The .NET commands below target the playground solution and must be confirmed against the real solution file for any other work. Any agent that has to deviate from this document must record the command it actually ran, and why, in its activity `result`.
+> **Status:** the software-factory framework and its Python tools live under `.agents/`; the .NET playground solution is `Synonms.Satisfactory.Playground.slnx` at the repository root. Confirm commands against the actual solution and test-project configuration for other work. Any agent that has to deviate from this document must record the command it actually ran, and why, in its activity `result`.
 
 ## Shell
 
@@ -37,6 +37,17 @@ Run from the repository root. Commands return compact JSON for agent consumption
 | Check an agent's changed files against the ownership guard | `python .agents/run.py adlc guard {agent} {files...}` |
 | Run routing and failsafe tests | `python -m pytest tests/adlc -q` |
 
+## Planning and Repository Context
+
+| Purpose | Command |
+| --- | --- |
+| Discover sourced repository facts for a work item | `python .agents/run.py repo-context {technology} --paths {path...}` |
+| Lint a draft plan for unnecessary handoffs | `python .agents/run.py work_items lint-plan {work-item-id} --input plan.json` |
+| Report recorded work-item metrics and invalid historical runs | `python .agents/run.py work_items metrics-report` |
+| Run .NET/Microsoft Testing Platform tests with normalized JSON | `python .agents/run.py test-runner --project {test-project.csproj}` |
+
+These commands provide context and advisory feedback. The work-item service and schemas remain authoritative for persisted data and graph invariants.
+
 ## .NET
 
 Run from the repository root unless stated otherwise.
@@ -50,6 +61,8 @@ Run from the repository root unless stated otherwise.
 | Run one test project | `dotnet test .\path\to\Project.Tests.csproj --no-build` |
 | Run a filtered set of tests | `dotnet test .\path\to\Project.Tests.csproj --no-build --filter "FullyQualifiedName~MyFeature"` |
 | Format check | `dotnet format --verify-no-changes` |
+
+The playground integration test project uses Microsoft Testing Platform. Use the `test-runner` command above for structured CTRF results and stable failure signatures; positional `dotnet test {project}` can select VSTest and reject MTP options in this setup. To compare test inventory before and after a QA task, pass the earlier report with `--baseline-report {report.json}`. A decrease fails the check unless `--test-count-decrease-justification` states why it is intentional.
 
 ## Command discipline
 
@@ -65,4 +78,4 @@ The no-progress failsafe depends on a stable failure signature. When tests fail,
 
 ## Other stacks
 
-The `playground/dotnet` solution is the only stack currently wired up. When another is added, extend this document with its restore, build, lint, and test commands before running the ADLC workflow against it.
+The .NET playground is the only stack currently wired up. When another is added, extend this document with its restore, build, lint, and test commands before running the ADLC workflow against it.

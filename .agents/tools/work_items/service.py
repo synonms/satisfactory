@@ -92,6 +92,8 @@ METRIC_FIELDS = {
 }
 PLACEHOLDER_MODELS = {"unknown", "n/a", "na", "none", "null", "model", "tbd"}
 INTAKE_AGENTS = {"triage", "software-architect"}
+PLAN_RISKS = {"low", "medium", "high"}
+PLAN_MODES = {"lean", "balanced", "strict"}
 DEFAULT_EXECUTION = {
     "branch": None,
     "budget": {
@@ -185,20 +187,74 @@ class WorkItemService:
         return self.update_status(work_item_id, new_status)
 
 
-    def add_spec(self, work_item_id: str, input: Mapping[str, Any], tasks_input: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-        return self._author_plan(work_item_id, input, tasks_input, revise=False)
+    def add_spec(
+        self,
+        work_item_id: str,
+        input: Mapping[str, Any],
+        tasks_input: Sequence[Mapping[str, Any]],
+        plan_policy: Mapping[str, Any] | None = None,
+        repository_context: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return self._author_plan(
+            work_item_id,
+            input,
+            tasks_input,
+            revise=False,
+            plan_policy=plan_policy,
+            repository_context=repository_context,
+        )
 
 
-    def revise_spec(self, work_item_id: str, input: Mapping[str, Any], tasks_input: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-        return self._author_plan(work_item_id, input, tasks_input, revise=True)
+    def revise_spec(
+        self,
+        work_item_id: str,
+        input: Mapping[str, Any],
+        tasks_input: Sequence[Mapping[str, Any]],
+        plan_policy: Mapping[str, Any] | None = None,
+        repository_context: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return self._author_plan(
+            work_item_id,
+            input,
+            tasks_input,
+            revise=True,
+            plan_policy=plan_policy,
+            repository_context=repository_context,
+        )
 
 
-    def add_tasks(self, work_item_id: str, tasks_input: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-        return self._author_plan(work_item_id, None, tasks_input, revise=False)
+    def add_tasks(
+        self,
+        work_item_id: str,
+        tasks_input: Sequence[Mapping[str, Any]],
+        plan_policy: Mapping[str, Any] | None = None,
+        repository_context: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return self._author_plan(
+            work_item_id,
+            None,
+            tasks_input,
+            revise=False,
+            plan_policy=plan_policy,
+            repository_context=repository_context,
+        )
 
 
-    def revise_tasks(self, work_item_id: str, tasks_input: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
-        return self._author_plan(work_item_id, None, tasks_input, revise=True)
+    def revise_tasks(
+        self,
+        work_item_id: str,
+        tasks_input: Sequence[Mapping[str, Any]],
+        plan_policy: Mapping[str, Any] | None = None,
+        repository_context: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        return self._author_plan(
+            work_item_id,
+            None,
+            tasks_input,
+            revise=True,
+            plan_policy=plan_policy,
+            repository_context=repository_context,
+        )
 
 
     def get_plan(self, work_item_id: str) -> dict[str, Any]:
@@ -265,6 +321,8 @@ class WorkItemService:
         tasks_input: Sequence[Mapping[str, Any]],
         *,
         revise: bool,
+        plan_policy: Mapping[str, Any] | None = None,
+        repository_context: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         if not tasks_input:
             raise TaskValidationError("A task plan must contain at least one task")
@@ -296,8 +354,22 @@ class WorkItemService:
             else None
         )
         tasks = self._build_tasks(work_item, [deepcopy(dict(task)) for task in tasks_input])
+        normalized_policy = (
+            _build_plan_policy(plan_policy)
+            if plan_policy is not None
+            else work_item.get("planPolicy")
+        )
+        if repository_context is not None and not isinstance(repository_context, Mapping):
+            raise TaskValidationError("Repository context must be an object")
+        normalized_context = (
+            deepcopy(dict(repository_context))
+            if repository_context is not None
+            else work_item.get("repositoryContext")
+        )
 
-        return self._repository.set_plan(work_item_id, specification, tasks)
+        return self._repository.set_plan(
+            work_item_id, specification, tasks, normalized_policy, normalized_context
+        )
 
 
 
@@ -635,6 +707,23 @@ def _validate_metrics(metrics: Mapping[str, Any]) -> None:
     model = metrics["model"]
     if not isinstance(model, str) or model.strip().lower() in PLACEHOLDER_MODELS | {""}:
         raise TaskValidationError("Metrics 'model' must name the model that performed the run")
+
+
+def _build_plan_policy(item: Mapping[str, Any]) -> dict[str, str]:
+    unexpected = sorted(set(item) - {"risk", "mode"})
+    if unexpected:
+        raise TaskValidationError(
+            "Plan policy contains unsupported fields: " + ", ".join(unexpected)
+        )
+
+    risk = item.get("risk")
+    mode = item.get("mode")
+    if not isinstance(risk, str) or risk not in PLAN_RISKS:
+        raise TaskValidationError("Plan policy risk must be low, medium, or high")
+    if not isinstance(mode, str) or mode not in PLAN_MODES:
+        raise TaskValidationError("Plan policy mode must be lean, balanced, or strict")
+
+    return {"risk": risk, "mode": mode}
 
 
 def _reaches_phase(

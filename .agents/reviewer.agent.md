@@ -33,7 +33,7 @@ I review:
 
 ## Required Input
 
-`python .agents/run.py adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, and `iteration`.
+`python .agents/run.py adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, `iteration`, `planPolicy`, and a task-specific `repositoryContext` brief when available. The approved work item and specification remain authoritative.
 
 1. `python .agents/run.py work_items get_task {work-item-id} {task-id}` for my scope and verification points.
 2. `python .agents/run.py work_items get {work-item-id}` for the work item and its acceptance criteria.

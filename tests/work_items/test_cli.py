@@ -116,6 +116,104 @@ def test_cli_records_intake_metrics(tmp_path: Path) -> None:
     assert data["execution"]["totals"]["totalTokens"] == 300
 
 
+def test_cli_lints_plan_without_persisting_it(tmp_path: Path) -> None:
+    board = tmp_path / "board"
+    run_cli(board, "create-request", "--input", "-", input_value=create_input())
+
+    linted = run_cli(
+        board,
+        "lint-plan",
+        "00001-1",
+        "--input",
+        "-",
+        input_value={
+            "planPolicy": {"risk": "low", "mode": "lean"},
+            "tasks": [
+                {"id": "document", "phase": "documentation", "scope": "Write the docs."},
+                {"id": "validate", "phase": "validation", "scope": "Validate the docs."},
+            ],
+        },
+    )
+    fetched = run_cli(board, "get", "00001-1")
+
+    assert linted.returncode == 0
+    assert response(linted)["data"]["estimatedAgentRuns"] == 2
+    assert fetched.returncode == 0
+    assert response(fetched)["data"]["planStatus"] is None
+
+
+def test_cli_persists_plan_policy_and_repository_context(tmp_path: Path) -> None:
+    board = tmp_path / "board"
+    run_cli(board, "create-request", "--input", "-", input_value=create_input())
+    repository_context = {
+        "technology": "dotnet",
+        "scopePaths": ["src"],
+        "facts": [{"name": "sdkVersion", "value": "10.0.0", "source": "global.json"}],
+        "projects": [],
+        "resources": [".agents/resources/developer-commands.md"],
+    }
+
+    authored = run_cli(
+        board,
+        "add_tasks",
+        "00001-1",
+        "--input",
+        "-",
+        input_value={
+            "planPolicy": {"risk": "low", "mode": "lean"},
+            "repositoryContext": repository_context,
+            "tasks": [
+                {"id": "document", "phase": "documentation", "scope": "Write the docs."},
+                {
+                    "id": "validate",
+                    "phase": "validation",
+                    "scope": "Validate the docs.",
+                    "dependencies": ["document"],
+                },
+            ],
+        },
+    )
+    fetched = run_cli(board, "get_plan", "00001-1")
+
+    assert authored.returncode == 0, authored.stderr
+    assert fetched.returncode == 0, fetched.stderr
+    plan = response(fetched)["data"]
+    assert plan["planPolicy"] == {"risk": "low", "mode": "lean"}
+    assert plan["repositoryContext"] == repository_context
+
+
+def test_cli_reports_metrics_and_flags_invalid_history(tmp_path: Path) -> None:
+    board = tmp_path / "board"
+    run_cli(board, "create-request", "--input", "-", input_value=create_input())
+    run_cli(
+        board,
+        "record_intake",
+        "00001-1",
+        "--input",
+        "-",
+        input_value={
+            "agent": "triage",
+            "result": "Created the request.",
+            "metrics": {
+                "durationSeconds": 30,
+                "inputTokens": 200,
+                "outputTokens": 100,
+                "totalTokens": 300,
+                "model": "gpt-5.3-codex",
+                "estimatedCostUsd": 0.05,
+            },
+        },
+    )
+
+    report = run_cli(board, "metrics-report")
+
+    assert report.returncode == 0
+    data = response(report)["data"]
+    assert data["agentRuns"] == 1
+    assert data["measured"]["totalTokens"] == 300
+    assert data["invalidRuns"] == []
+
+
 
 def test_cli_lists_and_changes_status(tmp_path: Path) -> None:
     board = tmp_path / "board"

@@ -63,6 +63,8 @@ The only allowed transitions are `new -> in-progress`, `in-progress -> done`, an
 Every work item carries two service-managed fields beyond its requirement content.
 
 - `planStatus`: `null`, `draft`, or `approved`. The single human gate for every work-item type. No task may record activity while it is `null` or `draft`.
+- `planPolicy`: optional architect-authored `{ "risk": "low|medium|high", "mode": "lean|balanced|strict" }` metadata persisted with the plan. Existing work items may omit it.
+- `repositoryContext`: optional sourced repository snapshot captured during design and persisted with the plan. It is informational, not a replacement for requirements or specification.
 - `intake`: pre-delivery runs recorded against the work item. Each entry carries `ts`, `agent` (`triage` or `software-architect`), `result`, and the same `metrics` object used by task activity.
 - `execution`: the routing budget, cumulative metrics, and escalations.
   - `budget`: `maxTaskAttempts`, `maxReviewLoops`, `maxValidationLoops`, `maxTotalAgentRuns`, plus the `reviewLoops`, `validationLoops`, and `totalAgentRuns` counters.

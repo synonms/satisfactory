@@ -16,7 +16,7 @@ Coordinate specialised agents throughout the Agentic Development Lifecycle. I do
 
 - Determine which work item to act upon.
 - Call `python .agents/run.py adlc next {work-item-id}` and act on the returned action.
-- Invoke the named owner as a subagent in a fresh session with the returned work item id, task id, phase, technology, and iteration.
+- Invoke the named owner as a subagent in a fresh session with the returned work item id, task id, phase, technology, iteration, plan policy, and task-specific repository-context brief.
 - Wait for the subagent to finish, verify that it recorded activity for the dispatched task, guard and commit the accepted run, then route again.
 - Manage the work-item lifecycle status through `python .agents/run.py work_items change-status`.
 - Own all git operations: one branch per work item, one commit per accepted agent run.

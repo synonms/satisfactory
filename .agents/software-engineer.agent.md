@@ -34,7 +34,7 @@ I work on:
 
 ## Required Input
 
-`python .agents/run.py adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, `technology`, and `iteration`. Everything else I read from disk. I never rely on conversation history.
+`python .agents/run.py adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, `technology`, `iteration`, `planPolicy`, and a task-specific `repositoryContext` brief when available. Treat the approved work item and specification as authoritative; the brief is sourced convenience context. Everything else I read from disk. I never rely on conversation history.
 
 1. `python .agents/run.py work_items get_task {work-item-id} {task-id}` for my scope, deliverables, verification points, affected paths, and contracts.
 2. `python .agents/run.py work_items get {work-item-id}` for the work item and its requirement content.

@@ -36,6 +36,8 @@ class Dispatch:
     contracts: list[str] = field(default_factory=list)
     acceptance_criteria: list[str] = field(default_factory=list)
     dependencies: list[str] = field(default_factory=list)
+    plan_policy: dict[str, Any] | None = None
+    repository_context: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -53,6 +55,8 @@ class Dispatch:
             "contracts": self.contracts,
             "acceptanceCriteriaCovered": self.acceptance_criteria,
             "dependencies": self.dependencies,
+            "planPolicy": self.plan_policy,
+            "repositoryContext": self.repository_context,
         }
 
 
@@ -95,6 +99,8 @@ def next_task(work_item: WorkItem) -> Dispatch | None:
             contracts=list(task.get("contracts", [])),
             acceptance_criteria=list(task.get("acceptanceCriteriaCovered", [])),
             dependencies=list(task.get("dependencies", [])),
+            plan_policy=work_item.get("planPolicy"),
+            repository_context=_repository_context_for_task(work_item, task),
         )
     return None
 
@@ -108,3 +114,43 @@ def is_complete(work_item: WorkItem) -> bool:
 
 def blocked_tasks(work_item: WorkItem) -> list[dict[str, Any]]:
     return [task for task in work_item.get("tasks", []) if task["state"] == TaskState.BLOCKED.value]
+
+
+def _repository_context_for_task(
+    work_item: WorkItem, task: dict[str, Any]
+) -> dict[str, Any] | None:
+    context = work_item.get("repositoryContext")
+    if not isinstance(context, dict):
+        return None
+    technology = task.get("technology")
+    if not technology or context.get("technology", "").lower() != technology.lower():
+        return None
+
+    affected_paths = [_normalize_scope_path(path) for path in task.get("affectedPaths", [])]
+    projects = [
+        project
+        for project in context.get("projects", [])
+        if not affected_paths
+        or any(
+            _paths_overlap(_normalize_scope_path(project.get("path", "")), path)
+            or _paths_overlap(_normalize_scope_path(project.get("path", "")).rsplit("/", 1)[0], path)
+            for path in affected_paths
+        )
+    ]
+    return {
+        "technology": context["technology"],
+        "scopePaths": context.get("scopePaths", []),
+        "facts": context.get("facts", []),
+        "projects": projects,
+        "resources": context.get("resources", []),
+    }
+
+
+def _normalize_scope_path(path: str) -> str:
+    return path.replace("\\", "/").removesuffix("/**").rstrip("/").lower()
+
+
+def _paths_overlap(left: str, right: str) -> bool:
+    return bool(left and right) and (
+        left == right or left.startswith(right + "/") or right.startswith(left + "/")
+    )

@@ -68,6 +68,12 @@ def build_parser() -> argparse.ArgumentParser:
     get_plan = commands.add_parser("get_plan", aliases=["get-plan"])
     get_plan.add_argument("work_item_id")
 
+    lint_plan = commands.add_parser("lint-plan")
+    lint_plan.add_argument("work_item_id")
+    lint_plan.add_argument("--input", default="-")
+
+    commands.add_parser("metrics-report")
+
     approve_plan = commands.add_parser("approve_plan", aliases=["approve-plan"])
     approve_plan.add_argument("work_item_id")
 
@@ -116,6 +122,8 @@ def main(argv: list[str] | None = None) -> int:
                 raise SpecificationValidationError("Input must be a JSON object")
             specification = payload.get("specification")
             tasks = payload.get("tasks")
+            plan_policy = payload.get("planPolicy")
+            repository_context = payload.get("repositoryContext")
             if not isinstance(specification, dict):
                 from .models import SpecificationValidationError
 
@@ -125,25 +133,59 @@ def main(argv: list[str] | None = None) -> int:
 
                 raise TaskValidationError("'tasks' must be a JSON array")
             if arguments.command == "add_spec":
-                result = service.add_spec(arguments.work_item_id, specification, tasks)
+                result = service.add_spec(
+                    arguments.work_item_id,
+                    specification,
+                    tasks,
+                    plan_policy,
+                    repository_context,
+                )
             else:
-                result = service.revise_spec(arguments.work_item_id, specification, tasks)
+                result = service.revise_spec(
+                    arguments.work_item_id,
+                    specification,
+                    tasks,
+                    plan_policy,
+                    repository_context,
+                )
         elif arguments.command in {"add_tasks", "add-tasks", "revise_tasks", "revise-tasks"}:
             payload = _read_input(arguments.input)
+            plan_policy = None
+            repository_context = None
             if isinstance(payload, dict):
+                plan_policy = payload.get("planPolicy")
+                repository_context = payload.get("repositoryContext")
                 payload = payload.get("tasks")
             if not isinstance(payload, list):
                 from .models import TaskValidationError
 
                 raise TaskValidationError("Input must be a JSON array of tasks")
             if arguments.command in {"add_tasks", "add-tasks"}:
-                result = service.add_tasks(arguments.work_item_id, payload)
+                result = service.add_tasks(
+                    arguments.work_item_id, payload, plan_policy, repository_context
+                )
             else:
-                result = service.revise_tasks(arguments.work_item_id, payload)
+                result = service.revise_tasks(
+                    arguments.work_item_id, payload, plan_policy, repository_context
+                )
         elif arguments.command in {"get_spec", "get-spec"}:
             result = service.get_spec(arguments.work_item_id)
         elif arguments.command in {"get_plan", "get-plan"}:
             result = service.get_plan(arguments.work_item_id)
+        elif arguments.command == "lint-plan":
+            from .plan_lint import lint_plan
+
+            payload = _read_input(arguments.input)
+            if not isinstance(payload, dict):
+                from .models import TaskValidationError
+
+                raise TaskValidationError("Plan lint input must be a JSON object")
+            work_item = service.get(arguments.work_item_id)
+            result = lint_plan(work_item, payload)
+        elif arguments.command == "metrics-report":
+            from .metrics_report import build_metrics_report
+
+            result = build_metrics_report(service.list())
         elif arguments.command in {"approve_plan", "approve-plan"}:
             result = service.approve_plan(arguments.work_item_id)
         elif arguments.command in {"get_task", "get-task"}:

@@ -35,7 +35,7 @@ I validate:
 
 ## Required Evidence
 
-`python .agents/run.py adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, and `iteration`. Everything else I read from disk. I never rely on conversation history.
+`python .agents/run.py adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, `iteration`, `planPolicy`, and a task-specific `repositoryContext` brief when available. Treat the approved work item and specification as authoritative; the brief is sourced convenience context. Everything else I read from disk. I never rely on conversation history.
 
 1. `python .agents/run.py work_items get_task {work-item-id} {task-id}` for my scope and verification points.
 2. `python .agents/run.py work_items get {work-item-id}` for the work item, its requirement content, and the full task list with each task's history and `filesChanged`.

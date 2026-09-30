@@ -37,7 +37,7 @@ I work on:
 
 ## Required Input
 
-`python .agents/run.py adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, `technology`, and `iteration`. Everything else I read from disk. I never rely on conversation history.
+`python .agents/run.py adlc next {work-item-id}` supplies my `work-item-id`, `task-id`, `technology`, `iteration`, `planPolicy`, and a task-specific `repositoryContext` brief when available. Treat the approved work item and specification as authoritative; the brief is sourced convenience context. Everything else I read from disk. I never rely on conversation history.
 
 1. `python .agents/run.py work_items get_task {work-item-id} {task-id}` for my scope, deliverables, and verification points.
 2. `python .agents/run.py work_items get {work-item-id}` for the work item and its requirement content.
@@ -45,6 +45,7 @@ I work on:
 4. The implementation task I depend on, for its `latestArtifact` and `filesChanged`.
 5. Relevant production code, existing tests, test projects, test configuration, and repository instructions.
 6. `.agents/resources/developer-commands.md` for the build and test commands.
+7. For .NET/Microsoft Testing Platform projects, use `python .agents/run.py test-runner --project {test-project.csproj}` rather than inventing a `dotnet test` invocation. The command emits normalized test counts, a stable failure signature, and a CTRF report path.
 
 If the plan is not approved or my task cannot be matched to a requirement, record the blocker and stop.
 
@@ -65,7 +66,7 @@ For an ad hoc direct request, use the user's stated expected behavior as the req
 
 5. Implement focused, deterministic tests that verify observable behavior rather than internal implementation details.
 6. Use realistic boundaries for integration tests. Cover serialization, persistence, authorization, tenant isolation, messaging, configuration, or public API behavior when the requirement crosses those boundaries.
-7. Run the narrowest relevant tests first, then affected project builds and broader relevant suites when the change crosses a public, persistence, security, or multi-project boundary.
+7. Run the narrowest relevant tests first, then affected project builds and broader relevant suites when the change crosses a public, persistence, security, or multi-project boundary. When changing tests, capture the test-runner report before and after the change and pass the earlier report using `--baseline-report`; explain any intentional decrease with `--test-count-decrease-justification`.
 8. Diagnose failures from their evidence. Distinguish a product defect, test defect, flaky behavior, environmental failure, and pre-existing failure.
 9. Record the outcome with `record_activity`.
 
@@ -82,7 +83,7 @@ The payload must include `agent: quality-assurance-engineer`, the `outcome`, a `
 My outcomes are:
 
 - `passed` when the tests I own exist, are meaningful, and pass.
-- `failed` when any test I own fails. **I must also supply `failureSignature`**: a stable signature of the sorted set of failing test identifiers. Two consecutive identical signatures trip the no-progress failsafe, which is what stops an endless remediation loop.
+- `failed` when any test I own fails or the test-integrity check detects an unjustified count decrease. **I must also supply `failureSignature`** from the test-runner output: a stable signature of the sorted set of failing test identifiers. Two consecutive identical signatures trip the no-progress failsafe, which is what stops an endless remediation loop.
 - `blocked` when I cannot produce evidence at all.
 
 A `failed` outcome returns my task for another attempt. When the cause is a production defect, say so explicitly in `result` so the engineer's rework task is unambiguous.

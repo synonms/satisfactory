@@ -79,7 +79,7 @@ stateDiagram-v2
 One cycle:
 
 1. `python .agents/run.py adlc next {work-item-id}` returns one of `await-approval`, `dispatch`, `block`, `ready-for-user`, or `stop`.
-2. On `dispatch`, the orchestrator invokes the named `owner` as a subagent in a fresh session with the returned work item id, task id, phase, technology, and iteration.
+2. On `dispatch`, the orchestrator invokes the named `owner` as a subagent in a fresh session with the returned work item id, task id, phase, technology, iteration, plan policy, and task-specific repository-context brief. The brief is a sourced convenience; the approved work item and specification remain authoritative.
 3. The agent does the work and calls `record_activity` with its outcome and metrics.
 4. The orchestrator waits for the subagent, verifies its recorded activity, runs the ownership guard, and commits the accepted run.
 5. The orchestrator's next tool call is `python .agents/run.py adlc next {work-item-id}`. It does not defer that call to a todo or return control to the user between cycles.
@@ -103,7 +103,7 @@ Attempt caps alone permit an agent to thrash identically three times. All of the
 3. **Global run budget.** `maxTotalAgentRuns` is a hard circuit breaker across the whole work item.
 4. **No-progress detection.** QA supplies `failureSignature` with a `failed` outcome. Two consecutive identical signatures for a task escalate to blocked immediately, regardless of remaining budget. This is the highest-value failsafe: it catches the loop where the same mistake is repeated with cosmetic variation.
 5. **Ownership guard.** `python .agents/run.py adlc guard {agent} {files...}` rejects a run where `software-engineer` touched tests, `quality-assurance-engineer` touched production code, or `reviewer`/`implementation-validator` touched anything. This prevents the classic failure where an engineer makes a failing test pass by editing the test.
-6. **Test-integrity guard.** Reject a test run in which the total test count decreased unless the agent states an explicit justification. Prevents progress by deletion.
+6. **Test-integrity guard.** Compare the QA run's CTRF report against a baseline captured before test edits. The deterministic test runner rejects a decreased test count unless an explicit justification is supplied. Prevents progress by deletion.
 7. **Blocked is a clean terminal state**, not a failure to retry around. On blocked, append an entry to `execution.escalations` describing the requirement, the evidence, the attempts made, and the recommended human action, then stop.
 
 ## Git conventions

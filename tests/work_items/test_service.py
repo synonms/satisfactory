@@ -12,6 +12,7 @@ from tools.work_items.models import (
     WorkItemStatus,
     WorkItemValidationError,
 )
+from tools.work_items.plan_lint import lint_plan
 from tools.work_items.service import WorkItemService
 
 
@@ -342,6 +343,138 @@ def test_implementation_task_requires_a_downstream_review(tmp_path: Path) -> Non
 
     with pytest.raises(TaskValidationError):
         manager.add_spec(work_item_id, specification(), plan)
+
+
+def test_multiple_implementations_can_share_test_and_review_tasks(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+    plan = [
+        {
+            "id": "impl-contract",
+            "phase": "implementation",
+            "scope": "Update the shared contract.",
+            "acceptanceCriteriaCovered": ["00001-1.1"],
+        },
+        {
+            "id": "impl-ui",
+            "phase": "implementation",
+            "scope": "Display the shared contract in the UI.",
+            "acceptanceCriteriaCovered": ["00001-1.2"],
+        },
+        {
+            "id": "test-feature",
+            "phase": "integration-test",
+            "scope": "Verify the feature across its contract and UI boundary.",
+            "dependencies": ["impl-contract", "impl-ui"],
+            "acceptanceCriteriaCovered": ["00001-1.1", "00001-1.2"],
+        },
+        {
+            "id": "review-feature",
+            "phase": "review",
+            "scope": "Review the complete feature and its tests.",
+            "dependencies": ["test-feature"],
+        },
+        {
+            "id": "validate-feature",
+            "phase": "validation",
+            "scope": "Validate the complete feature against its requirements.",
+            "dependencies": ["review-feature"],
+            "acceptanceCriteriaCovered": ["00001-1.1", "00001-1.2"],
+        },
+    ]
+
+    created = manager.add_spec(work_item_id, specification(), plan)
+
+    assert [task["id"] for task in created["tasks"]] == [task["id"] for task in plan]
+
+
+def test_plan_policy_is_persisted_and_validated(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    first_id = manager.create_request([story()])[0]["id"]
+    context = {
+        "technology": "dotnet",
+        "scopePaths": ["src/Api"],
+        "facts": [{"name": "sdkVersion", "value": "10.0.100", "source": "global.json"}],
+        "projects": [
+            {
+                "path": "src/Api/Api.csproj",
+                "name": "Api",
+                "kind": "application",
+                "targetFrameworks": ["net10.0"],
+                "testFrameworks": [],
+                "references": [],
+                "source": "src/Api/Api.csproj",
+            }
+        ],
+        "resources": [".agents/resources/developer-commands.md"],
+    }
+
+    plan = manager.add_spec(
+        first_id,
+        specification(),
+        tasks(),
+        {"risk": "low", "mode": "lean"},
+        context,
+    )
+
+    assert plan["planPolicy"] == {"risk": "low", "mode": "lean"}
+    assert plan["repositoryContext"] == context
+    assert manager.get(first_id)["planPolicy"] == {"risk": "low", "mode": "lean"}
+    assert manager.get(first_id)["repositoryContext"] == context
+
+    second_id = manager.create_request([story()])[0]["id"]
+    invalid_tasks = tasks()
+    for task in invalid_tasks:
+        task["acceptanceCriteriaCovered"] = [
+            criterion.replace(first_id, second_id)
+            for criterion in task.get("acceptanceCriteriaCovered", [])
+        ]
+    with pytest.raises(TaskValidationError, match="Plan policy mode"):
+        manager.add_spec(
+            second_id,
+            specification(),
+            invalid_tasks,
+            {"risk": "low", "mode": "fast"},
+        )
+
+
+def test_plan_lint_warns_about_fragmented_handoffs(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+    plan = tasks()
+    plan.append(
+        {
+            "id": "review-second",
+            "phase": "review",
+            "scope": "Review another implementation slice.",
+            "dependencies": ["unit-test-work-items"],
+        }
+    )
+
+    report = lint_plan(
+        manager.get(work_item_id),
+        {"planPolicy": {"risk": "low", "mode": "lean"}, "tasks": plan},
+    )
+
+    assert report["estimatedAgentRuns"] == 5
+    assert {warning["code"] for warning in report["warnings"]} == {
+        "lean-handoff-budget",
+        "fragmented-review",
+    }
+
+
+def test_plan_lint_warns_when_review_can_run_before_qa(tmp_path: Path) -> None:
+    manager = service(tmp_path / "board")
+    work_item_id = manager.create_request([story()])[0]["id"]
+    plan = tasks()
+    plan[2]["dependencies"] = ["impl-work-items"]
+
+    report = lint_plan(
+        manager.get(work_item_id),
+        {"planPolicy": {"risk": "low", "mode": "lean"}, "tasks": plan},
+    )
+
+    assert "review-before-tests" in {warning["code"] for warning in report["warnings"]}
 
 
 def test_plan_requires_a_validation_task(tmp_path: Path) -> None:

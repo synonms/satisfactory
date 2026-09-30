@@ -85,6 +85,29 @@ def test_next_task_follows_dependency_order(approved_work_item) -> None:
     assert routing.is_complete(work_item)
 
 
+def test_dispatch_includes_only_relevant_repository_context(approved_work_item) -> None:
+    manager, work_item_id = approved_work_item
+    work_item = manager.get(work_item_id)
+    work_item["tasks"][0]["technology"] = "dotnet"
+    work_item["tasks"][0]["affectedPaths"] = ["src/Api/Endpoint.cs"]
+    work_item["planPolicy"] = {"risk": "low", "mode": "lean"}
+    work_item["repositoryContext"] = {
+        "technology": "dotnet",
+        "scopePaths": ["src"],
+        "facts": [{"name": "sdkVersion", "value": "10.0.100", "source": "global.json"}],
+        "projects": [
+            {"path": "src/Api/Api.csproj"},
+            {"path": "src/Worker/Worker.csproj"},
+        ],
+        "resources": [".agents/resources/developer-commands.md"],
+    }
+
+    dispatch = routing.next_task(work_item).to_dict()
+
+    assert dispatch["planPolicy"] == {"risk": "low", "mode": "lean"}
+    assert dispatch["repositoryContext"]["projects"] == [{"path": "src/Api/Api.csproj"}]
+
+
 def test_a_draft_plan_is_never_dispatched(tmp_path: Path) -> None:
     manager = service(tmp_path / "board")
     work_item_id = manager.create_request(

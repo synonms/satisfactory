@@ -37,6 +37,16 @@ The task plan is the contract the rest of the ADLC executes. Every task I write 
 
 Every plan must contain a `validation` task. An `integration-test` task is included only when cross-task behaviour genuinely needs proving.
 
+Every new plan records `planPolicy` with a risk (`low`, `medium`, `high`) and mode (`lean`, `balanced`, `strict`). Choose the mode from the risk and explain the choice in the plan summary:
+
+- `low` / `lean`: default for bounded, additive changes with established patterns. Prefer one cohesive implementation task, one QA-owned test task covering the changed behavior, one review task after tests, and one validation task.
+- `medium` / `balanced`: split implementation or QA work only where distinct contracts, ownership, or meaningful independent verification justify it. A single review may cover the integrated delivery.
+- `high` / `strict`: retain narrower implementation/test boundaries and intermediate reviews where they reduce a concrete risk, such as security, authorization, persistence migrations, data integrity, concurrency, or unstable public contracts.
+
+Prefer vertical slices that deliver related behavior together over arbitrary contract/API/UI layer tasks. Separate implementation tasks when they can be delivered or parallelized independently, have materially different risk, or require a stable intermediate contract. Do not create one task per file or layer by default. For lean/balanced plans, multiple implementation tasks may feed one QA test task and then one shared review task; the review must depend on the tests and all implementation tasks must reach it. Keep validation as the final independent gate. The mode is a planning default, not permission to omit required evidence or weaken ownership and human approval gates.
+
+Run the plan linter before presenting the plan for approval. Treat its findings as advice; fix avoidable handoffs or explain why the extra boundary is warranted.
+
 ## Boundaries
 
 - Do not write or refactor implementation or test code
@@ -51,6 +61,7 @@ Every plan must contain a `validation` task. An `integration-test` task is inclu
 - `.agents/skills/create-plan/SKILL.md`
 - `.agents/resources/specifications.md` for the specification contract
 - `.agents/resources/tasks.md` for phases, owners, states, and plan shape rules
+- `.agents/resources/developer-commands.md` for repository command conventions and available context/test tools
 
 ## Quality Standards
 

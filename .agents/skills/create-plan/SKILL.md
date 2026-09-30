@@ -35,6 +35,8 @@ For a `user-story` or `chore`, design the architectural approach: affected layer
 
 For a `bug` or `documentation` item there is no specification. Go straight to the task plan.
 
+Before authoring a plan, generate repository context with the repository-context command and run the plan linter on the proposed plan. Persist a concise, sourced context snapshot as `repositoryContext` with the plan. Record `planPolicy` with `risk` (`low`, `medium`, `high`) and `mode` (`lean`, `balanced`, `strict`); default bounded additive work to `low` / `lean`, and use `strict` only when the change has concrete high-risk characteristics. The context snapshot is informative and does not override the work item or specification.
+
 ## 4. Author the task graph
 
 Decompose the work into single-owner phase tasks. The phase determines the owner, so do not invent owners.
@@ -51,7 +53,7 @@ Decompose the work into single-owner phase tasks. The phase determines the owner
 
 Standard shapes:
 
-- `user-story` / `chore`: per implementation unit, `implementation` -> `unit-test` -> `review`. Then a single `validation` task depending on the review tasks.
+- `user-story` / `chore`: for low-risk cohesive work, `implementation` -> one QA-owned `unit-test` or `integration-test` task -> one shared `review` -> one `validation`. For balanced or strict work, split only at justified delivery or risk boundaries; multiple implementation tasks may share QA and review tasks.
 - `bug`: `bug-repro` -> `implementation` -> `unit-test` -> `validation`.
 - `documentation`: `documentation` -> `validation`.
 
@@ -59,6 +61,8 @@ Rules the service enforces, so get them right first time:
 
 - Every plan must contain a `validation` task.
 - For `user-story` and `chore`, every `implementation` task must have a `review` task downstream of it.
+- A shared review task may cover multiple implementation tasks. For user stories and chores, make it depend on the QA task(s) so review observes tested changes.
+- Keep QA as the independent owner of tests; do not ask the software engineer to modify test files.
 - For `bug` and `documentation`, review tasks are rejected.
 - Dependencies must resolve within the plan and must not form a cycle.
 - Add an `integration-test` task **only** when cross-task behaviour genuinely needs proving. Do not add one by default.
@@ -84,12 +88,12 @@ Do not supply `owner`, `state`, `attempts`, or `history`; the service owns those
 
 For a `user-story` or `chore`:
 
-- Build the payload `{ "specification": { ... }, "tasks": [ ... ] }`.
+- Build the payload `{ "specification": { ... }, "planPolicy": { "risk": "low|medium|high", "mode": "lean|balanced|strict" }, "repositoryContext": { ... }, "tasks": [ ... ] }`.
 - Write it to a temporary JSON file, call `python .agents/run.py work_items add_spec {work_item_id} --input {temporary-file}`, and remove the temporary file afterwards.
 
 For a `bug` or `documentation` item:
 
-- Build a JSON array of task objects.
+- Build the payload `{ "planPolicy": { ... }, "repositoryContext": { ... }, "tasks": [ ... ] }`.
 - Write it to a temporary JSON file, call `python .agents/run.py work_items add_tasks {work_item_id} --input {temporary-file}`, and remove the temporary file afterwards.
 
 Treat a nonzero exit code as a blocker. Report the structured error and do not create records manually.

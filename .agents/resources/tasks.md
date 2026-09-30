@@ -21,6 +21,7 @@ Retries never create tasks. When work is sent back, the existing task is reopene
 - A work item has no tasks until the `software-architect` authors a plan.
 - The task plan is authored for **every** work-item type. `user-story` and `chore` plans are authored alongside a specification with `add_spec`; `bug` and `documentation` plans are authored with `add_tasks` and have no specification.
 - `planStatus` is the single human approval gate. No task may be dispatched or record activity until it is `approved`.
+- A plan may declare `planPolicy` (`risk` and `mode`) to guide task granularity. This policy never overrides required validation, test ownership, review coverage, or human gates.
 
 ## Phases and Owners
 
@@ -43,6 +44,8 @@ Plan shape rules enforced by the service:
 - `bug` and `documentation` plans must not contain `review` tasks.
 - `integration-test` tasks are optional and appear only when the architect plans one.
 - Dependencies must resolve within the plan and must not form a cycle.
+
+For low-risk lean stories/chores, prefer one QA-owned test task and one shared review task after tests. A shared review may cover several implementation tasks. Split tests or reviews only where a concrete risk or independent delivery boundary justifies the additional handoff.
 
 ## Task Contract
 
@@ -120,6 +123,8 @@ Outcome to state mapping:
 ## Run Metrics
 
 Agents cannot read their own token counters, so metrics are measured where possible and estimated otherwise. Placeholders are rejected: the service returns a `validation_error` for zero tokens, zero duration, a `totalTokens` that is not `inputTokens + outputTokens`, or a `model` such as `unknown`.
+
+For .NET/Microsoft Testing Platform projects, use `python .agents/run.py test-runner --project {test-project.csproj}` for normalized CTRF results and a stable failure signature. To protect test integrity, capture a baseline report before test edits and pass it to the post-edit run with `--baseline-report {report.json}`. An intentional test-count decrease requires `--test-count-decrease-justification` and must be explained in the activity result.
 
 - `durationSeconds`: measure it. Capture the UTC start time as your first action (`python -c "import time; print(time.time())"`) and subtract it from the time immediately before recording the outcome.
 - `model`: the model identifier you are running as, as stated in your system context.

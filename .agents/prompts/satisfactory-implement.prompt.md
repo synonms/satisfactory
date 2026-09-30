@@ -21,7 +21,7 @@ A work item id in format `{request_id}-{sequence}` where request-id is a 5 digit
 3. If the work item is already `done` or `blocked`, report that no further action is required and stop.
 4. `python .agents/run.py adlc next {work_item_id}` and act on the returned action:
    - `await-approval`: tell the user the plan needs approval via `python .agents/run.py work_items approve_plan {work_item_id}` and stop.
-   - `dispatch`: move the work item to `in-progress` if it is still `new`, create the work-item branch if it does not exist, then use the agent tool to invoke the named `owner` as a subagent in a **new session**. Pass the work item id plus the task id, phase, technology, and iteration exactly as returned in the dispatch payload. Wait for the subagent to finish; do not tell the user to invoke it.
+   - `dispatch`: move the work item to `in-progress` if it is still `new`, create the work-item branch if it does not exist, then use the agent tool to invoke the named `owner` as a subagent in a **new session**. Pass the work item id, task id, phase, technology, iteration, plan policy, and task-specific repository-context brief exactly as returned in the dispatch payload. The brief may be null for legacy items or unrelated technology. Wait for the subagent to finish; do not tell the user to invoke it.
    - `block`: append an escalation, `change-status {work_item_id} blocked`, and stop.
    - `ready-for-user`: present the delivery for final human acceptance. On explicit approval, `change-status {work_item_id} done`.
    - `stop`: report the reason and stop.

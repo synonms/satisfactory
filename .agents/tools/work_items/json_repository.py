@@ -101,6 +101,8 @@ class JsonFileWorkItemRepository:
         work_item_id: str,
         specification: Specification | None,
         tasks: list[Task],
+        plan_policy: dict[str, str] | None = None,
+        repository_context: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         if not tasks:
             raise SpecificationValidationError("A task plan must supply at least one task")
@@ -118,6 +120,10 @@ class JsonFileWorkItemRepository:
 
             work_item["specification"] = specification
             work_item["tasks"] = tasks
+            if plan_policy is not None:
+                work_item["planPolicy"] = plan_policy
+            if repository_context is not None:
+                work_item["repositoryContext"] = repository_context
             work_item["planStatus"] = PlanStatus.DRAFT.value
             self._work_item_validator.validate(work_item)
             self._write_atomic(self._path_for(work_item_id), work_item)
@@ -293,6 +299,8 @@ def _plan_of(work_item: WorkItem) -> dict[str, Any]:
     return {
         "workItemId": work_item["id"],
         "planStatus": work_item["planStatus"],
+        "planPolicy": work_item.get("planPolicy"),
+        "repositoryContext": work_item.get("repositoryContext"),
         "specification": work_item.get("specification"),
         "tasks": work_item.get("tasks", []),
     }

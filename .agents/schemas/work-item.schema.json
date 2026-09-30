@@ -52,6 +52,57 @@
       "description": "Approval state of the task plan. The single human gate for every work-item type.",
       "enum": [null, "draft", "approved"]
     },
+    "planPolicy": {
+      "type": "object",
+      "description": "Risk classification and planning mode chosen by the software architect.",
+      "additionalProperties": false,
+      "required": ["risk", "mode"],
+      "properties": {
+        "risk": { "type": "string", "enum": ["low", "medium", "high"] },
+        "mode": { "type": "string", "enum": ["lean", "balanced", "strict"] }
+      }
+    },
+    "repositoryContext": {
+      "type": "object",
+      "description": "Optional sourced repository snapshot captured during plan design.",
+      "additionalProperties": false,
+      "required": ["technology", "scopePaths", "facts", "projects", "resources"],
+      "properties": {
+        "technology": { "type": "string", "minLength": 1 },
+        "scopePaths": { "type": "array", "items": { "type": "string" } },
+        "facts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "value", "source"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "value": { "type": ["string", "null"] },
+              "source": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "name", "kind", "targetFrameworks", "testFrameworks", "references", "source"],
+            "properties": {
+              "path": { "type": "string", "minLength": 1 },
+              "name": { "type": "string", "minLength": 1 },
+              "kind": { "type": "string", "enum": ["application", "test"] },
+              "targetFrameworks": { "type": "array", "items": { "type": "string" } },
+              "testFrameworks": { "type": "array", "items": { "type": "string" } },
+              "references": { "type": "array", "items": { "type": "string" } },
+              "source": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "resources": { "type": "array", "items": { "type": "string" } }
+      }
+    },
     "intake": {
       "type": "array",
       "description": "Triage and design runs that produced or amended this work item, with their run metrics.",
